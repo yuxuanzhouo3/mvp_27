@@ -3015,14 +3015,37 @@ export default function MornGPTHomepage() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Personal Information</h4>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsEditingProfile(!isEditingProfile)}
-                          className="text-gray-600 dark:text-gray-400"
-                        >
-                          {isEditingProfile ? "Cancel" : "Edit"}
-                        </Button>
+                        <div className="flex space-x-2">
+                          {isEditingProfile && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setIsEditingProfile(false)}
+                              className="text-gray-600 dark:text-gray-400"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (isEditingProfile) {
+                                saveUserProfile()
+                              } else {
+                                setIsEditingProfile(true)
+                              }
+                            }}
+                            disabled={isEditingProfile && profileSaveStatus === "saving"}
+                            className="text-gray-600 dark:text-gray-400"
+                          >
+                            {isEditingProfile ? (
+                              profileSaveStatus === "saving" ? "Saving..." : "Save"
+                            ) : (
+                              "Edit"
+                            )}
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3099,34 +3122,7 @@ export default function MornGPTHomepage() {
                         />
                       </div>
 
-                      {isEditingProfile && (
-                        <div className="flex space-x-2">
-                          <Button
-                            onClick={saveUserProfile}
-                            disabled={profileSaveStatus === "saving"}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                          >
-                            {profileSaveStatus === "saving" ? (
-                              <div className="flex items-center space-x-2">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                <span>Saving...</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center space-x-2">
-                                <Save className="w-4 h-4" />
-                                <span>Save Changes</span>
-                              </div>
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsEditingProfile(false)}
-                            className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      )}
+
 
                       {profileSaveStatus === "success" && (
                         <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
