@@ -3285,13 +3285,13 @@ export default function MornGPTHomepage() {
                     </div>
 
                     {/* Notification Settings */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Notifications</h4>
-                      <div className="space-y-3">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-sm">Notifications</h4>
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="text-gray-900 dark:text-[#ececf1]">Push Notifications</Label>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications for new messages</p>
+                          <div className="space-y-0.5">
+                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs">Push Notifications</Label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Receive notifications for new messages</p>
                           </div>
                           <Switch
                             checked={appUser?.settings?.notifications || false}
@@ -3299,9 +3299,9 @@ export default function MornGPTHomepage() {
                           />
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="text-gray-900 dark:text-[#ececf1]">Sound Effects</Label>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Play sounds for notifications</p>
+                          <div className="space-y-0.5">
+                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs">Sound Effects</Label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Play sounds for notifications</p>
                           </div>
                           <Switch
                             checked={appUser?.settings?.soundEnabled || false}
