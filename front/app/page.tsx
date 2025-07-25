@@ -389,6 +389,7 @@ export default function MornGPTHomepage() {
   
   // Combined settings state
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile")
+  const [accountSecurityExpanded, setAccountSecurityExpanded] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -3255,7 +3256,7 @@ export default function MornGPTHomepage() {
 
                   <TabsContent value="preferences" className="space-y-4">
                     {/* Theme Settings */}
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Appearance</h4>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -3326,9 +3327,14 @@ export default function MornGPTHomepage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => setAccountSecurityExpanded(!accountSecurityExpanded)}
                             className="p-1 h-6 w-6 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                           >
-                            <ChevronDown className="w-4 h-4" />
+                            {accountSecurityExpanded ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
                           </Button>
                         </div>
                         <div className="border-t border-gray-200 dark:border-[#565869] pt-3">
