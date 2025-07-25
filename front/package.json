@@ -1,7 +1,10 @@
 {
-  "name": "my-v0-project",
-  "version": "0.1.0",
+  "name": "morngpt-homepage",
+  "version": "1.0.0",
   "private": true,
+  "author": "Yuxuan Zhou",
+  "copyright": "Copyright © 2025 Yuxuan Zhou. All rights reserved.",
+  "license": "UNLICENSED",
   "scripts": {
     "build": "next build",
     "dev": "next dev",

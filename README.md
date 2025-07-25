@@ -4,9 +4,9 @@ A modern, responsive AI chat interface built with Next.js, TypeScript, and Tailw
 
 ## Copyright
 
-**Copyright © 2025.7 Yuxuan Zhou**
+**Copyright © 2025 Yuxuan Zhou. All rights reserved.**
 
-All rights reserved. This project and its contents are protected by copyright law.
+This project and its contents are protected by copyright law. Unauthorized copying, distribution, or use is strictly prohibited.
 
 ## Features
 
@@ -150,7 +150,7 @@ This project is copyrighted and proprietary. For collaboration or contribution i
 
 ## License
 
-**Copyright © 2025.7 Yuxuan Zhou**
+**Copyright © 2025 Yuxuan Zhou. All rights reserved.**
 
 This software is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited.
 
