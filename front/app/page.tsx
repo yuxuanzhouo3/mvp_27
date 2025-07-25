@@ -3312,21 +3312,7 @@ export default function MornGPTHomepage() {
                     </div>
 
                     {/* Data Settings */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Data & Privacy</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="text-gray-900 dark:text-[#ececf1]">Auto Save</Label>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Automatically save your conversations</p>
-                          </div>
-                          <Switch
-                            checked={appUser?.settings?.autoSave || false}
-                            onCheckedChange={(checked) => updateUserSettings({ autoSave: checked })}
-                          />
-                        </div>
-                      </div>
-                    </div>
+
 
                     {/* Enhanced Delete Account */}
                     <div className="space-y-4">
