@@ -3053,8 +3053,8 @@ export default function MornGPTHomepage() {
               </DialogTitle>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]" type="hover">
-              <div className="p-1" style={{ minHeight: '600px' }}>
+            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]" type="always">
+              <div className="p-1" style={{ minHeight: '400px' }}>
                 <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="profile" className="flex items-center space-x-2">
@@ -3253,15 +3253,15 @@ export default function MornGPTHomepage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="preferences" className="space-y-6">
+                  <TabsContent value="preferences" className="space-y-4">
                     {/* Theme Settings */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Appearance</h4>
-                      <div className="space-y-3">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Appearance</h4>
+                      <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="text-gray-900 dark:text-[#ececf1]">Theme</Label>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
+                          <div className="space-y-0">
+                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs font-normal">Theme</Label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Choose your preferred theme</p>
                           </div>
                           <Select
                             value={appUser?.settings?.theme || "auto"}
@@ -3285,13 +3285,13 @@ export default function MornGPTHomepage() {
                     </div>
 
                     {/* Notification Settings */}
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-sm">Notifications</h4>
-                      <div className="space-y-2">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Notifications</h4>
+                      <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs">Push Notifications</Label>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Receive notifications for new messages</p>
+                          <div className="space-y-0">
+                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs font-normal">Push Notifications</Label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Receive notifications for new messages</p>
                           </div>
                           <Switch
                             checked={appUser?.settings?.notifications || false}
@@ -3299,9 +3299,9 @@ export default function MornGPTHomepage() {
                           />
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs">Sound Effects</Label>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Play sounds for notifications</p>
+                          <div className="space-y-0">
+                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs font-normal">Sound Effects</Label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Play sounds for notifications</p>
                           </div>
                           <Switch
                             checked={appUser?.settings?.soundEnabled || false}
