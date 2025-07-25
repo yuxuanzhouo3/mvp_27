@@ -3319,7 +3319,7 @@ export default function MornGPTHomepage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Account Security</h4>
+                            <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-sm">Account Security</h4>
                             <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
                               <span className="text-xs font-medium text-red-700 dark:text-red-300">Important</span>
                             </div>
