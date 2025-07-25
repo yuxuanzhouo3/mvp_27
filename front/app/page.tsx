@@ -92,7 +92,6 @@ import {
   Save,
   AlertTriangle,
 } from "lucide-react"
-import { ThemeSelector } from "@/components/theme-selector"
 
 const mornGPTCategories = [
   {
@@ -904,9 +903,6 @@ export default function MornGPTHomepage() {
       }
       localStorage.setItem(`morngpt_deleted_account_${appUser.id}`, JSON.stringify(restorationData))
       
-      // Notify support team of account deletion
-      notifySupportOfAccountDeletion(appUser, deletionDate)
-      
       setAppUser(null)
       setChatSessions([])
       setBookmarkedMessages([])
@@ -980,56 +976,6 @@ export default function MornGPTHomepage() {
           setAccountDeletionDate(null)
         }
       }
-    }
-  }
-
-  const notifySupportOfAccountDeletion = async (userData: AppUser, deletionDate: Date) => {
-    try {
-      // In a real application, this would send an email to support
-      const supportEmail = "support@morngpt.com"
-      const subject = `Account Deletion Notification - ${userData.email}`
-      const body = `
-Account Deletion Notification
-
-User Details:
-- Name: ${userData.name}
-- Email: ${userData.email}
-- User ID: ${userData.id}
-- Account Type: ${userData.isPro ? 'Pro' : 'Free'}
-- Deletion Date: ${deletionDate.toLocaleDateString()} at ${deletionDate.toLocaleTimeString()}
-- Restoration Deadline: ${new Date(deletionDate.getTime() + 90 * 24 * 60 * 60 * 1000).toLocaleDateString()}
-
-The user has completed the enhanced deletion process including:
-- Confirmation phrase verification
-- 2FA verification
-- Final confirmation
-
-The account data will be stored for 90 days for potential restoration.
-
-This is an automated notification from the MornGPT system.
-      `
-      
-      // Simulate sending email (in real app, this would use a service like SendGrid, AWS SES, etc.)
-      console.log("Support notification email would be sent:")
-      console.log("To:", supportEmail)
-      console.log("Subject:", subject)
-      console.log("Body:", body)
-      
-      // Store notification in localStorage for demo purposes
-      const notifications = JSON.parse(localStorage.getItem("morngpt_support_notifications") || "[]")
-      notifications.push({
-        id: Date.now().toString(),
-        type: "account_deletion",
-        userEmail: userData.email,
-        userName: userData.name,
-        deletionDate: deletionDate.toISOString(),
-        restorationDeadline: new Date(deletionDate.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        timestamp: new Date().toISOString()
-      })
-      localStorage.setItem("morngpt_support_notifications", JSON.stringify(notifications))
-      
-    } catch (error) {
-      console.error("Failed to notify support of account deletion:", error)
     }
   }
 
@@ -3108,7 +3054,7 @@ This is an automated notification from the MornGPT system.
             </DialogHeader>
 
             <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
-              <div className="p-1">
+              <div className="p-1 pb-8">
                 <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="profile" className="flex items-center space-x-2">
@@ -3317,14 +3263,21 @@ This is an automated notification from the MornGPT system.
                             <Label className="text-gray-900 dark:text-[#ececf1]">Theme</Label>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
                           </div>
-                          <ThemeSelector
-                            currentTheme={appUser?.settings?.theme}
-                            onThemeChange={(themeId) => {
-                              updateUserSettings({ theme: themeId as "light" | "dark" | "auto" })
-                              applyTheme(themeId as "light" | "dark" | "auto")
+                          <Select
+                            value={appUser?.settings?.theme || "auto"}
+                            onValueChange={(value) => {
+                              updateUserSettings({ theme: value as "light" | "dark" | "auto" })
+                              applyTheme(value as "light" | "dark" | "auto")
                             }}
-                            className="w-48"
-                          />
+                          >
+                            <SelectTrigger className="w-32 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                              <SelectContent>
+                                <SelectItem value="light">Light</SelectItem>
+                                <SelectItem value="dark">Dark</SelectItem>
+                                <SelectItem value="auto">Auto</SelectItem>
+                              </SelectContent>
+                            </SelectTrigger>
+                          </Select>
                         </div>
                       </div>
                     </div>
@@ -3381,7 +3334,8 @@ This is an automated notification from the MornGPT system.
                           <span className="text-xs font-medium text-red-700 dark:text-red-300">Important</span>
                         </div>
                       </div>
-                      <div className="space-y-3">
+                      <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
+                        <div className="space-y-3">
                         <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                           <div className="flex items-center space-x-3 mb-3">
                             <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
@@ -3421,19 +3375,9 @@ This is an automated notification from the MornGPT system.
                             <strong>Security Note:</strong> Account deletion requires 2FA verification and confirmation phrase.
                           </div>
                         </div>
-                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                          <div className="flex items-start space-x-3">
-                            <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-                            <div>
-                              <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Support Contact</h5>
-                              <p className="text-sm text-blue-700 dark:text-blue-300">
-                                Need help? Contact our support team at support@morngpt.com for assistance with account management.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
+                  </div>
 
                     {/* Account Actions */}
                     <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
@@ -3471,6 +3415,13 @@ This is an automated notification from the MornGPT system.
                 </Tabs>
             </div>
             </ScrollArea>
+            
+            {/* Scroll Indicator */}
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex items-center space-x-1 text-gray-400 dark:text-gray-500">
+              <ChevronDown className="w-4 h-4 animate-bounce" />
+              <span className="text-xs">Scroll for more</span>
+              <ChevronDown className="w-4 h-4 animate-bounce" />
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -3695,18 +3646,6 @@ This is an automated notification from the MornGPT system.
                           Deleted on: {accountDeletionDate.toLocaleDateString()} at {accountDeletionDate.toLocaleTimeString()}
                         </p>
                       )}
-                    </div>
-                  </div>
-                </div>
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                  <div className="flex items-start space-x-3">
-                    <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-                    <div>
-                      <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Support Team Notified</h5>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        Our support team has been automatically notified of your account deletion. 
-                        If you need assistance or have questions, please contact us at support@morngpt.com
-                      </p>
                     </div>
                   </div>
                 </div>
