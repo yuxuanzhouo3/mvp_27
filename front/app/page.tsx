@@ -304,8 +304,9 @@ export default function MornGPTHomepage() {
   const [isUploading, setIsUploading] = useState(false)
   
   // File upload limits
-  const MAX_FILES = 5
-  const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+  const MAX_FILES = 20
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB per file
+  const MAX_TOTAL_SIZE = 50 * 1024 * 1024 // 50MB total
   const ALLOWED_FILE_TYPES = [
     'text/plain',
     'text/csv',
@@ -868,7 +869,7 @@ export default function MornGPTHomepage() {
     }, 1500)
   }
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files) return
 
@@ -884,6 +885,10 @@ export default function MornGPTHomepage() {
       errors.push(`Maximum ${MAX_FILES} files allowed`)
     }
 
+    // Calculate current total size
+    const currentTotalSize = uploadedFiles.reduce((total, file) => total + file.size, 0)
+    let newFilesTotalSize = 0
+
     fileArray.forEach((file) => {
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
@@ -898,17 +903,23 @@ export default function MornGPTHomepage() {
       }
 
       // Check for duplicate files
-      const isDuplicate = uploadedFiles.some(existingFile => 
+      const isDuplicate = uploadedFiles.some(existingFile =>
         existingFile.name === file.name && existingFile.size === file.size
       )
-      
+
       if (isDuplicate) {
         errors.push(`${file.name} is already uploaded`)
         return
       }
 
+      newFilesTotalSize += file.size
       validFiles.push(file)
     })
+
+    // Check total size limit
+    if (currentTotalSize + newFilesTotalSize > MAX_TOTAL_SIZE) {
+      errors.push(`Total size limit exceeded (max ${MAX_TOTAL_SIZE / (1024 * 1024)}MB)`)
+    }
 
     if (errors.length > 0) {
       setUploadError(errors.join(', '))
@@ -1680,13 +1691,13 @@ export default function MornGPTHomepage() {
                       className={`h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 ${
                         isUploading ? 'animate-pulse' : ''
                       }`}
-                      title={
-                        uploadedFiles.length >= MAX_FILES 
-                          ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
-                          : isUploading 
-                            ? 'Uploading...' 
-                            : `Upload files (max ${MAX_FILES}, ${MAX_FILE_SIZE / (1024 * 1024)}MB each)`
-                      }
+                                              title={
+                          uploadedFiles.length >= MAX_FILES 
+                            ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
+                            : isUploading 
+                              ? 'Uploading...' 
+                              : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
+                        }
                       type="button"
                       disabled={!appUser || isUploading}
                       onClick={() => {
@@ -2168,49 +2179,47 @@ export default function MornGPTHomepage() {
                 </div>
               )}
 
-              {/* Uploaded Files Display */}
-              {uploadedFiles.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {uploadedFiles.length}/{MAX_FILES} files
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-5 px-2 text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
-                      onClick={() => setUploadedFiles([])}
-                    >
-                      Clear all
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {uploadedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="group flex items-center space-x-1 bg-gray-50 dark:bg-[#565869] border border-gray-200 dark:border-[#565869] rounded-md px-2 py-1 text-xs"
+                              {/* Uploaded Files Display */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {uploadedFiles.length}/{MAX_FILES} files ({formatFileSize(uploadedFiles.reduce((total, file) => total + file.size, 0))})
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-5 px-2 text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                        onClick={() => setUploadedFiles([])}
                       >
-                        <span className="text-sm">{getFileIcon(file.type)}</span>
-                        <span className="text-gray-700 dark:text-gray-300 truncate max-w-24" title={file.name}>
-                          {file.name}
-                        </span>
-                        <span className="text-gray-500 dark:text-gray-400 text-xs">
-                          ({formatFileSize(file.size)})
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          onClick={() => removeFile(index)}
-                          title="Remove file"
+                        Clear all
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-10 gap-1 max-h-12 overflow-hidden">
+                      {uploadedFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="group relative bg-gray-50 dark:bg-[#565869] border border-gray-200 dark:border-[#565869] rounded px-1 py-0.5 text-xs flex items-center"
+                          title={`${file.name} (${formatFileSize(file.size)})`}
                         >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
+                          <span className="text-xs mr-1">{getFileIcon(file.type)}</span>
+                          <span className="text-gray-700 dark:text-gray-300 truncate text-xs">
+                            {file.name.length > 8 ? file.name.substring(0, 6) + '..' : file.name}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-3 w-3 p-0 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 absolute -top-1 -right-1"
+                            onClick={() => removeFile(index)}
+                            title="Remove file"
+                          >
+                            <X className="w-2 h-2" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Enhanced Quick Actions */}
               <div className="mt-3 flex flex-wrap gap-2">
