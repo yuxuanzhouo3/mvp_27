@@ -300,6 +300,29 @@ export default function MornGPTHomepage() {
   const [currentChatId, setCurrentChatId] = useState("1")
   const [expandedFolders, setExpandedFolders] = useState<string[]>(["general"])
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [uploadError, setUploadError] = useState<string>("")
+  const [isUploading, setIsUploading] = useState(false)
+  
+  // File upload limits
+  const MAX_FILES = 5
+  const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+  const ALLOWED_FILE_TYPES = [
+    'text/plain',
+    'text/csv',
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/json',
+    'application/xml',
+    'text/markdown',
+    'text/html'
+  ]
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [editingChatId, setEditingChatId] = useState<string>("")
   const [editingTitle, setEditingTitle] = useState<string>("")
@@ -749,21 +772,31 @@ export default function MornGPTHomepage() {
   }
 
   const handleSubmit = async () => {
-    if (!prompt.trim()) return
+    if (!prompt.trim() && uploadedFiles.length === 0) return
     if (!appUser) {
       setShowAuthDialog(true)
       return
     }
 
+    // Create message content with files
+    let messageContent = prompt
+    if (uploadedFiles.length > 0) {
+      const fileList = uploadedFiles.map(file => 
+        `${getFileIcon(file.type)} ${file.name} (${formatFileSize(file.size)})`
+      ).join('\n')
+      messageContent = `${prompt}\n\n📎 **Attached Files:**\n${fileList}`
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: prompt,
+      content: messageContent,
       timestamp: new Date(),
     }
 
     setMessages((prev) => [...prev, userMessage])
     setPrompt("")
+    setUploadedFiles([]) // Clear uploaded files after sending
     setIsLoading(true)
 
     const currentModel = getSelectedModelDisplay()
@@ -837,9 +870,79 @@ export default function MornGPTHomepage() {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
-    if (files) {
-      setUploadedFiles((prev) => [...prev, ...Array.from(files)])
+    if (!files) return
+
+    setIsUploading(true)
+    setUploadError("")
+
+    const fileArray = Array.from(files)
+    const validFiles: File[] = []
+    const errors: string[] = []
+
+    // Check file count limit
+    if (uploadedFiles.length + fileArray.length > MAX_FILES) {
+      errors.push(`Maximum ${MAX_FILES} files allowed`)
     }
+
+    fileArray.forEach((file) => {
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name} is too large (max ${MAX_FILE_SIZE / (1024 * 1024)}MB)`)
+        return
+      }
+
+      // Check file type
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+        errors.push(`${file.name} is not a supported file type`)
+        return
+      }
+
+      // Check for duplicate files
+      const isDuplicate = uploadedFiles.some(existingFile => 
+        existingFile.name === file.name && existingFile.size === file.size
+      )
+      
+      if (isDuplicate) {
+        errors.push(`${file.name} is already uploaded`)
+        return
+      }
+
+      validFiles.push(file)
+    })
+
+    if (errors.length > 0) {
+      setUploadError(errors.join(', '))
+      setTimeout(() => setUploadError(""), 5000) // Clear error after 5 seconds
+    }
+
+    if (validFiles.length > 0) {
+      setUploadedFiles((prev) => [...prev, ...validFiles])
+    }
+
+    setIsUploading(false)
+    event.target.value = '' // Reset input
+  }
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const getFileIcon = (fileType: string): string => {
+    if (fileType.startsWith('image/')) return '🖼️'
+    if (fileType.includes('pdf')) return '📄'
+    if (fileType.includes('word') || fileType.includes('document')) return '📝'
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊'
+    if (fileType.includes('text/') || fileType.includes('markdown')) return '📄'
+    if (fileType.includes('json') || fileType.includes('xml')) return '⚙️'
+    return '📎'
   }
 
   const handleModelChange = (modelType: string, category?: string, model?: string) => {
@@ -1562,17 +1665,37 @@ export default function MornGPTHomepage() {
                     }}
                   />
                   <div className="absolute bottom-2 right-2 flex items-center space-x-1">
-                    <input type="file" multiple onChange={handleFileUpload} className="hidden" id="file-upload" />
+                    <input 
+                      type="file" 
+                      multiple 
+                      onChange={handleFileUpload} 
+                      className="hidden" 
+                      id="file-upload"
+                      accept={ALLOWED_FILE_TYPES.join(',')}
+                      disabled={!appUser || isUploading || uploadedFiles.length >= MAX_FILES}
+                    />
                     <label htmlFor="file-upload">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                        title="Upload file"
+                        className={`h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 ${
+                          isUploading ? 'animate-pulse' : ''
+                        } ${uploadedFiles.length >= MAX_FILES ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={
+                          uploadedFiles.length >= MAX_FILES 
+                            ? `Maximum ${MAX_FILES} files reached` 
+                            : isUploading 
+                              ? 'Uploading...' 
+                              : `Upload files (max ${MAX_FILES}, ${MAX_FILE_SIZE / (1024 * 1024)}MB each)`
+                        }
                         type="button"
-                        disabled={!appUser}
+                        disabled={!appUser || isUploading || uploadedFiles.length >= MAX_FILES}
                       >
-                        <Paperclip className="w-4 h-4" />
+                        {isUploading ? (
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                        ) : (
+                          <Paperclip className="w-4 h-4" />
+                        )}
                       </Button>
                     </label>
 
@@ -2032,13 +2155,54 @@ export default function MornGPTHomepage() {
                 </div>
               </div>
 
+              {/* Upload Error Display */}
+              {uploadError && (
+                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <p className="text-xs text-red-600 dark:text-red-400">{uploadError}</p>
+                </div>
+              )}
+
+              {/* Uploaded Files Display */}
               {uploadedFiles.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {uploadedFiles.map((file, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      📎 {file.name}
-                    </Badge>
-                  ))}
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {uploadedFiles.length}/{MAX_FILES} files
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-5 px-2 text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                      onClick={() => setUploadedFiles([])}
+                    >
+                      Clear all
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {uploadedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="group flex items-center space-x-1 bg-gray-50 dark:bg-[#565869] border border-gray-200 dark:border-[#565869] rounded-md px-2 py-1 text-xs"
+                      >
+                        <span className="text-sm">{getFileIcon(file.type)}</span>
+                        <span className="text-gray-700 dark:text-gray-300 truncate max-w-24" title={file.name}>
+                          {file.name}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">
+                          ({formatFileSize(file.size)})
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          onClick={() => removeFile(index)}
+                          title="Remove file"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
