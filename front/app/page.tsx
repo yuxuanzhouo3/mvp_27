@@ -2608,6 +2608,41 @@ export default function MornGPTHomepage() {
 
               <Separator className="bg-gray-200 dark:bg-[#565869]" />
 
+              {/* Account Actions */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-gray-900 dark:text-[#ececf1] flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  Account Actions
+                </h4>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-transparent"
+                    onClick={() => {
+                      setShowSettingsDialog(false)
+                      setShowUpgradeDialog(true)
+                    }}
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    {appUser?.isPro ? 'Manage Subscription' : 'Upgrade to Pro'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 bg-transparent"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to sign out?')) {
+                        handleLogout()
+                      }
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              </div>
+
               {/* Danger Zone */}
               <div className="space-y-4">
                 <h4 className="font-medium text-red-600 dark:text-red-400">Danger Zone</h4>
@@ -2616,14 +2651,33 @@ export default function MornGPTHomepage() {
                     variant="outline"
                     size="sm"
                     className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to clear all your data? This action cannot be undone.')) {
+                        // Clear all user data
+                        Object.keys(localStorage).forEach((key) => {
+                          if (key.startsWith("morngpt_")) {
+                            localStorage.removeItem(key)
+                          }
+                        })
+                        window.location.reload()
+                      }
+                    }}
                   >
+                    <Trash2 className="w-4 h-4 mr-2" />
                     Clear All Data
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                        handleLogout()
+                        alert('Account deletion would be processed here in a real application.')
+                      }
+                    }}
                   >
+                    <User className="w-4 h-4 mr-2" />
                     Delete Account
                   </Button>
                 </div>
