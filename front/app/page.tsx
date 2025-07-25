@@ -992,26 +992,28 @@ export default function MornGPTHomepage() {
     setExpandedFolders([targetCategory])
   }
 
-  const createNewChat = () => {
+  const createNewChat = (category?: string, modelType?: string, model?: string) => {
     const newChat: ChatSession = {
       id: Date.now().toString(),
       title: "New Chat",
       messages: [],
-      model: "General",
-      modelType: "general",
-      category: "general",
+      model: model || "General",
+      modelType: modelType || "general",
+      category: category || "general",
       lastUpdated: new Date(),
       isModelLocked: false,
     }
     setChatSessions((prev) => [newChat, ...prev])
     setCurrentChatId(newChat.id)
     setMessages([])
-    setSelectedModelType("general")
-    setSelectedCategory("")
-    setSelectedModel("")
+    
+    // Update selected category and model if provided
+    if (category) setSelectedCategory(category)
+    if (modelType) setSelectedModelType(modelType)
+    if (model) setSelectedModel(model)
 
-    // Expand general folder and collapse others
-    setExpandedFolders(["general"])
+    // Expand the folder for the new chat's category
+    setExpandedFolders([category || "general"])
   }
 
   const selectChat = (chatId: string) => {
@@ -1170,7 +1172,7 @@ export default function MornGPTHomepage() {
               <div className="p-4 border-b border-gray-200 dark:border-[#565869] space-y-3">
                 <div className="flex items-center justify-between">
                   <Button
-                    onClick={createNewChat}
+                    onClick={() => createNewChat()}
                     className="flex-1 flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     <Plus className="w-4 h-4" />
@@ -1201,22 +1203,35 @@ export default function MornGPTHomepage() {
                 <div className="p-2">
                   {/* General Folder */}
                   <div className="mb-1">
-                    <div
-                      className="flex items-center space-x-1.5 p-1.5 hover:bg-gray-100 dark:hover:bg-[#565869] rounded cursor-pointer"
-                      onClick={() => toggleFolder("general")}
-                    >
-                      {expandedFolders.includes("general") ? (
-                        <FolderOpen className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                      ) : (
-                        <Folder className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                      )}
-                      <span className="text-xs font-medium text-gray-900 dark:text-[#ececf1]">General</span>
-                      <ChevronRight
-                        className={`w-2.5 h-2.5 text-gray-400 transition-transform ${
-                          expandedFolders.includes("general") ? "rotate-90" : ""
-                        }`}
-                      />
-                    </div>
+                    <ContextMenu>
+                      <ContextMenuTrigger>
+                        <div
+                          className="flex items-center space-x-1.5 p-1.5 hover:bg-gray-100 dark:hover:bg-[#565869] rounded cursor-pointer"
+                          onClick={() => toggleFolder("general")}
+                        >
+                          {expandedFolders.includes("general") ? (
+                            <FolderOpen className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                          ) : (
+                            <Folder className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                          )}
+                          <span className="text-xs font-medium text-gray-900 dark:text-[#ececf1]">General</span>
+                          <ChevronRight
+                            className={`w-2.5 h-2.5 text-gray-400 transition-transform ${
+                              expandedFolders.includes("general") ? "rotate-90" : ""
+                            }`}
+                          />
+                        </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                        <ContextMenuItem
+                          onClick={() => createNewChat("general", "general", "General")}
+                          className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          New Chat in General
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                     {expandedFolders.includes("general") && (
                       <div className="ml-5 space-y-0.5">
                         {(groupedChats.general || []).map((chat) => (
@@ -1318,25 +1333,38 @@ export default function MornGPTHomepage() {
 
                     return (
                       <div key={category.id} className="mb-1">
-                        <div
-                          className="flex items-center space-x-1.5 p-1.5 hover:bg-gray-100 dark:hover:bg-[#565869] rounded cursor-pointer"
-                          onClick={() => toggleFolder(category.id)}
-                        >
-                          {expandedFolders.includes(category.id) ? (
-                            <FolderOpen className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                          ) : (
-                            <Folder className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                          )}
-                          <category.icon className="w-2.5 h-2.5" />
-                          <span className="text-xs font-medium truncate text-gray-900 dark:text-[#ececf1]">
-                            {category.name}
-                          </span>
-                          <ChevronRight
-                            className={`w-2.5 h-2.5 text-gray-400 transition-transform ${
-                              expandedFolders.includes(category.id) ? "rotate-90" : ""
-                            }`}
-                          />
-                        </div>
+                        <ContextMenu>
+                          <ContextMenuTrigger>
+                            <div
+                              className="flex items-center space-x-1.5 p-1.5 hover:bg-gray-100 dark:hover:bg-[#565869] rounded cursor-pointer"
+                              onClick={() => toggleFolder(category.id)}
+                            >
+                              {expandedFolders.includes(category.id) ? (
+                                <FolderOpen className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                              ) : (
+                                <Folder className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                              )}
+                              <category.icon className="w-2.5 h-2.5" />
+                              <span className="text-xs font-medium truncate text-gray-900 dark:text-[#ececf1]">
+                                {category.name}
+                              </span>
+                              <ChevronRight
+                                className={`w-2.5 h-2.5 text-gray-400 transition-transform ${
+                                  expandedFolders.includes(category.id) ? "rotate-90" : ""
+                                }`}
+                              />
+                            </div>
+                          </ContextMenuTrigger>
+                          <ContextMenuContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                            <ContextMenuItem
+                              onClick={() => createNewChat(category.id, "morngpt", category.name)}
+                              className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              New Chat in {category.name}
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
                         {expandedFolders.includes(category.id) && (
                           <div className="ml-5 space-y-0.5">
                             {categoryChats.map((chat) => (
