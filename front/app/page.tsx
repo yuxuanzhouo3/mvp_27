@@ -3054,7 +3054,7 @@ export default function MornGPTHomepage() {
             </DialogHeader>
 
             <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
-              <div className="p-1 pb-8">
+              <div className="p-1">
                 <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="profile" className="flex items-center space-x-2">
@@ -3415,13 +3415,6 @@ export default function MornGPTHomepage() {
                 </Tabs>
             </div>
             </ScrollArea>
-            
-            {/* Scroll Indicator */}
-            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex items-center space-x-1 text-gray-400 dark:text-gray-500">
-              <ChevronDown className="w-4 h-4 animate-bounce" />
-              <span className="text-xs">Scroll for more</span>
-              <ChevronDown className="w-4 h-4 animate-bounce" />
-            </div>
           </DialogContent>
         </Dialog>
 
