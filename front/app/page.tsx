@@ -265,6 +265,11 @@ interface AppUser {
   name: string
   isPro: boolean
   avatar?: string
+  phone?: string
+  bio?: string
+  location?: string
+  website?: string
+  timezone?: string
   settings?: {
     theme: "light" | "dark" | "auto"
     language: string
@@ -399,22 +404,26 @@ export default function MornGPTHomepage() {
     const savedTheme = localStorage.getItem("morngpt_theme")
 
     if (savedUser) {
-      setAppUser(JSON.parse(savedUser))
+      const user = JSON.parse(savedUser)
+      setAppUser(user)
       // Load user's chat sessions
-      const savedChats = localStorage.getItem(`morngpt_chats_${JSON.parse(savedUser).id}`)
+      const savedChats = localStorage.getItem(`morngpt_chats_${user.id}`)
       if (savedChats) {
         setChatSessions(JSON.parse(savedChats))
       }
       // Load bookmarked messages
-      const savedBookmarks = localStorage.getItem(`morngpt_bookmarks_${JSON.parse(savedUser).id}`)
+      const savedBookmarks = localStorage.getItem(`morngpt_bookmarks_${user.id}`)
       if (savedBookmarks) {
         setBookmarkedMessages(JSON.parse(savedBookmarks))
       }
-    }
-
-    if (savedTheme === "dark") {
-      setIsDarkMode(true)
-      document.documentElement.classList.add("dark")
+      
+      // Apply user's saved theme preference
+      if (user.settings?.theme) {
+        applyTheme(user.settings.theme)
+      }
+    } else if (savedTheme) {
+      // Fallback to legacy theme setting
+      applyTheme(savedTheme as "light" | "dark" | "auto")
     }
   }, [])
 
@@ -761,10 +770,44 @@ export default function MornGPTHomepage() {
     if (appUser) {
       const updatedUser = {
         ...appUser,
-        settings: { ...appUser.settings, ...newSettings },
+        settings: { 
+          theme: "auto" as const,
+          language: "en",
+          notifications: false,
+          soundEnabled: false,
+          autoSave: false,
+          ...appUser.settings, 
+          ...newSettings 
+        },
       }
       setAppUser(updatedUser)
       localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
+      
+      // Apply theme changes immediately
+      if (newSettings?.theme) {
+        applyTheme(newSettings.theme)
+      }
+    }
+  }
+
+  // Enhanced theme application function
+  const applyTheme = (theme: "light" | "dark" | "auto") => {
+    let isDark = false
+    
+    if (theme === "auto") {
+      // Check system preference
+      isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+    } else {
+      isDark = theme === "dark"
+    }
+    
+    setIsDarkMode(isDark)
+    localStorage.setItem("morngpt_theme", theme)
+    
+    if (isDark) {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
     }
   }
 
@@ -774,11 +817,11 @@ export default function MornGPTHomepage() {
       setUserProfileForm({
         name: appUser.name,
         email: appUser.email,
-        phone: "",
-        bio: "",
-        location: "",
-        website: "",
-        timezone: "UTC",
+        phone: appUser.phone || "",
+        bio: appUser.bio || "",
+        location: appUser.location || "",
+        website: appUser.website || "",
+        timezone: appUser.timezone || "UTC",
         language: appUser.settings?.language || "en",
       })
       setShowProfileDialog(true)
@@ -798,9 +841,18 @@ export default function MornGPTHomepage() {
         ...appUser,
         name: userProfileForm.name,
         email: userProfileForm.email,
+        phone: userProfileForm.phone,
+        bio: userProfileForm.bio,
+        location: userProfileForm.location,
+        website: userProfileForm.website,
+        timezone: userProfileForm.timezone,
         settings: {
-          ...appUser.settings,
+          theme: "auto" as const,
           language: userProfileForm.language,
+          notifications: false,
+          soundEnabled: false,
+          autoSave: false,
+          ...appUser.settings,
         },
       }
       
@@ -2942,194 +2994,193 @@ export default function MornGPTHomepage() {
                   </TabsList>
 
                   <TabsContent value="profile" className="space-y-6">
-              {/* Profile Header */}
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
-                <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{appUser?.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{appUser?.email}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    {appUser?.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {appUser?.isPro ? "Pro Member" : "Free User"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Profile Form */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Personal Information</h4>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditingProfile(!isEditingProfile)}
-                    className="text-gray-600 dark:text-gray-400"
-                  >
-                    {isEditingProfile ? "Cancel" : "Edit"}
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="profileName" className="text-gray-900 dark:text-[#ececf1]">
-                      Full Name
-                    </Label>
-                    <Input
-                      id="profileName"
-                      value={userProfileForm.name}
-                      onChange={(e) => setUserProfileForm({ ...userProfileForm, name: e.target.value })}
-                      disabled={!isEditingProfile}
-                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="profileEmail" className="text-gray-900 dark:text-[#ececf1]">
-                      Email Address
-                    </Label>
-                    <Input
-                      id="profileEmail"
-                      type="email"
-                      value={userProfileForm.email}
-                      onChange={(e) => setUserProfileForm({ ...userProfileForm, email: e.target.value })}
-                      disabled={!isEditingProfile}
-                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="profilePhone" className="text-gray-900 dark:text-[#ececf1]">
-                      Phone Number
-                    </Label>
-                    <Input
-                      id="profilePhone"
-                      value={userProfileForm.phone}
-                      onChange={(e) => setUserProfileForm({ ...userProfileForm, phone: e.target.value })}
-                      disabled={!isEditingProfile}
-                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="profileLanguage" className="text-gray-900 dark:text-[#ececf1]">
-                      Language
-                    </Label>
-                    <Select
-                      value={userProfileForm.language}
-                      onValueChange={(value) => setUserProfileForm({ ...userProfileForm, language: value })}
-                      disabled={!isEditingProfile}
-                    >
-                      <SelectTrigger className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="es">Spanish</SelectItem>
-                          <SelectItem value="fr">French</SelectItem>
-                          <SelectItem value="de">German</SelectItem>
-                          <SelectItem value="zh">Chinese</SelectItem>
-                        </SelectContent>
-                      </SelectTrigger>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="profileBio" className="text-gray-900 dark:text-[#ececf1]">
-                    Bio
-                  </Label>
-                  <Textarea
-                    id="profileBio"
-                    value={userProfileForm.bio}
-                    onChange={(e) => setUserProfileForm({ ...userProfileForm, bio: e.target.value })}
-                    disabled={!isEditingProfile}
-                    placeholder="Tell us about yourself..."
-                    className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                  />
-                </div>
-
-                {isEditingProfile && (
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={saveUserProfile}
-                      disabled={profileSaveStatus === "saving"}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      {profileSaveStatus === "saving" ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          <span>Saving...</span>
+                    {/* Profile Header */}
+                    <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                      <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                        <User className="w-8 h-8 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{appUser?.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{appUser?.email}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          {appUser?.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {appUser?.isPro ? "Pro Member" : "Free User"}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <Save className="w-4 h-4" />
-                          <span>Save Changes</span>
+                      </div>
+                    </div>
+
+                    {/* Profile Form */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Personal Information</h4>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsEditingProfile(!isEditingProfile)}
+                          className="text-gray-600 dark:text-gray-400"
+                        >
+                          {isEditingProfile ? "Cancel" : "Edit"}
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="profileName" className="text-gray-900 dark:text-[#ececf1]">
+                            Full Name
+                          </Label>
+                          <Input
+                            id="profileName"
+                            value={userProfileForm.name}
+                            onChange={(e) => setUserProfileForm({ ...userProfileForm, name: e.target.value })}
+                            disabled={!isEditingProfile}
+                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="profileEmail" className="text-gray-900 dark:text-[#ececf1]">
+                            Email Address
+                          </Label>
+                          <Input
+                            id="profileEmail"
+                            type="email"
+                            value={userProfileForm.email}
+                            onChange={(e) => setUserProfileForm({ ...userProfileForm, email: e.target.value })}
+                            disabled={!isEditingProfile}
+                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="profilePhone" className="text-gray-900 dark:text-[#ececf1]">
+                            Phone Number
+                          </Label>
+                          <Input
+                            id="profilePhone"
+                            value={userProfileForm.phone}
+                            onChange={(e) => setUserProfileForm({ ...userProfileForm, phone: e.target.value })}
+                            disabled={!isEditingProfile}
+                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="profileLanguage" className="text-gray-900 dark:text-[#ececf1]">
+                            Language
+                          </Label>
+                          <Select
+                            value={userProfileForm.language}
+                            onValueChange={(value) => setUserProfileForm({ ...userProfileForm, language: value })}
+                            disabled={!isEditingProfile}
+                          >
+                            <SelectTrigger className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                              <SelectContent>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="es">Spanish</SelectItem>
+                                <SelectItem value="fr">French</SelectItem>
+                                <SelectItem value="de">German</SelectItem>
+                                <SelectItem value="zh">Chinese</SelectItem>
+                              </SelectContent>
+                            </SelectTrigger>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="profileBio" className="text-gray-900 dark:text-[#ececf1]">
+                          Bio
+                        </Label>
+                        <Textarea
+                          id="profileBio"
+                          value={userProfileForm.bio}
+                          onChange={(e) => setUserProfileForm({ ...userProfileForm, bio: e.target.value })}
+                          disabled={!isEditingProfile}
+                          placeholder="Tell us about yourself..."
+                          className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                        />
+                      </div>
+
+                      {isEditingProfile && (
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={saveUserProfile}
+                            disabled={profileSaveStatus === "saving"}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {profileSaveStatus === "saving" ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                <span>Saving...</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                <Save className="w-4 h-4" />
+                                <span>Save Changes</span>
+                              </div>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsEditingProfile(false)}
+                            className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          >
+                            Cancel
+                          </Button>
                         </div>
                       )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditingProfile(false)}
-                      className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
 
-                {profileSaveStatus === "success" && (
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                    <p className="text-sm text-green-600 dark:text-green-400">Profile updated successfully!</p>
-                  </div>
-                )}
+                      {profileSaveStatus === "success" && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                          <p className="text-sm text-green-600 dark:text-green-400">Profile updated successfully!</p>
+                        </div>
+                      )}
 
-                {profileSaveStatus === "error" && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                    <p className="text-sm text-red-600 dark:text-red-400">Failed to update profile. Please try again.</p>
-                  </div>
-                )}
-              </div>
+                      {profileSaveStatus === "error" && (
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                          <p className="text-sm text-red-600 dark:text-red-400">Failed to update profile. Please try again.</p>
+                        </div>
+                      )}
+                    </div>
 
-              {/* Account Actions */}
-              <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
-                <h4 className="font-medium text-gray-900 dark:text-[#ececf1] mb-3">Account Actions</h4>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowSettingsDialog(true)}
-                    className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Preferences & Settings
-                  </Button>
-                  {!appUser?.isPro && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowUpgradeDialog(true)}
-                      className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                    >
-                      <Crown className="w-4 h-4 mr-2 text-yellow-500" />
-                      Upgrade to Pro
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={confirmLogout}
-                    className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={confirmDeleteAccount}
-                    className="w-full justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Account
-                  </Button>
-                </div>
-              </div>
-            </div>
+                    {/* Account Actions */}
+                    <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] mb-3">Account Actions</h4>
+                      <div className="space-y-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowSettingsDialog(true)}
+                          className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Preferences & Settings
+                        </Button>
+                        {!appUser?.isPro && (
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowUpgradeDialog(true)}
+                            className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          >
+                            <Crown className="w-4 h-4 mr-2 text-yellow-500" />
+                            Upgrade to Pro
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          onClick={confirmLogout}
+                          className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Sign Out
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={confirmDeleteAccount}
+                          className="w-full justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Account
+                        </Button>
+                      </div>
+                    </div>
                   </TabsContent>
 
                   <TabsContent value="preferences" className="space-y-6">
@@ -3144,7 +3195,10 @@ export default function MornGPTHomepage() {
                           </div>
                           <Select
                             value={appUser?.settings?.theme || "auto"}
-                            onValueChange={(value) => updateUserSettings({ theme: value as "light" | "dark" | "auto" })}
+                            onValueChange={(value) => {
+                              updateUserSettings({ theme: value as "light" | "dark" | "auto" })
+                              applyTheme(value as "light" | "dark" | "auto")
+                            }}
                           >
                             <SelectTrigger className="w-32 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
                               <SelectContent>
@@ -3198,6 +3252,49 @@ export default function MornGPTHomepage() {
                             checked={appUser?.settings?.autoSave || false}
                             onCheckedChange={(checked) => updateUserSettings({ autoSave: checked })}
                           />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Extension Marketplace */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Extensions</h4>
+                      <div className="space-y-3">
+                        <div className="p-4 bg-gray-50 dark:bg-[#565869] rounded-lg border border-gray-200 dark:border-[#565869]">
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-gray-900 dark:text-[#ececf1]">Extension Marketplace</h5>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Enhance your MornGPT experience</p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                            Discover and install powerful extensions to customize your AI assistant experience. 
+                            From productivity tools to specialized AI models, find what works best for you.
+                          </p>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                            >
+                              <Globe2 className="w-4 h-4 mr-2" />
+                              Browse Extensions
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                            >
+                              <Settings className="w-4 h-4 mr-2" />
+                              Manage Installed
+                            </Button>
+                          </div>
+                          <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
+                            <strong>Coming Soon:</strong> Extension marketplace will be available in the next update.
+                          </div>
                         </div>
                       </div>
                     </div>
