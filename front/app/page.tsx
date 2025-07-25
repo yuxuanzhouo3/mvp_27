@@ -3320,9 +3320,6 @@ export default function MornGPTHomepage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-sm">Account Security</h4>
-                            <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
-                              <span className="text-xs font-medium text-red-700 dark:text-red-300">Important</span>
-                            </div>
                           </div>
                           <Button
                             variant="ghost"
@@ -3375,9 +3372,7 @@ export default function MornGPTHomepage() {
                                   Restore Account
                                 </Button>
                               </div>
-                              <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
-                                <strong>Security Note:</strong> Account deletion requires 2FA verification and confirmation phrase.
-                              </div>
+
                             </div>
                             
                             {/* Account Restoration Support */}
