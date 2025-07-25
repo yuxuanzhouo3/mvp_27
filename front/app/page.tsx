@@ -3316,11 +3316,20 @@ export default function MornGPTHomepage() {
 
                                           {/* Enhanced Delete Account */}
                       <div className="space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Account Security</h4>
-                          <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
-                            <span className="text-xs font-medium text-red-700 dark:text-red-300">Important</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Account Security</h4>
+                            <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
+                              <span className="text-xs font-medium text-red-700 dark:text-red-300">Important</span>
+                            </div>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 h-6 w-6 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
                         </div>
                         <div className="border-t border-gray-200 dark:border-[#565869] pt-3">
                           <div className="space-y-2">
