@@ -367,6 +367,13 @@ export default function MornGPTHomepage() {
   const [showProfileDialog, setShowProfileDialog] = useState(false)
   const [showLogoutConfirmDialog, setShowLogoutConfirmDialog] = useState(false)
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
+  const [showEnhancedDeleteDialog, setShowEnhancedDeleteDialog] = useState(false)
+  const [deleteAccountStep, setDeleteAccountStep] = useState<"warning" | "confirmation" | "2fa" | "final">("warning")
+  const [deleteConfirmationPhrase, setDeleteConfirmationPhrase] = useState("")
+  const [userConfirmationInput, setUserConfirmationInput] = useState("")
+  const [twoFACode, setTwoFACode] = useState("")
+  const [generatedTwoFACode, setGeneratedTwoFACode] = useState("")
+  const [accountDeletionDate, setAccountDeletionDate] = useState<Date | null>(null)
   const [userProfileForm, setUserProfileForm] = useState({
     name: "",
     email: "",
@@ -878,31 +885,98 @@ export default function MornGPTHomepage() {
   }
 
   const deleteUserAccount = () => {
-    // Clear all user data
-    localStorage.clear()
-    setAppUser(null)
-    setShowDeleteAccountDialog(false)
-    setShowProfileDialog(false)
-    
-    // Reset to default state
-    setChatSessions([
-      {
-        id: "1",
-        title: "Welcome to MornGPT",
-        messages: [],
-        model: "General",
-        modelType: "general",
-        category: "general",
-        lastUpdated: new Date(),
-        isModelLocked: false,
-      },
-    ])
-    setCurrentChatId("1")
-    setMessages([])
-    setPromptHistory([])
-    setBookmarkedMessages([])
-    
-    alert("Account deleted successfully")
+    if (appUser) {
+      // Clear all user data
+      localStorage.removeItem("morngpt_user")
+      localStorage.removeItem(`morngpt_chats_${appUser.id}`)
+      localStorage.removeItem(`morngpt_bookmarks_${appUser.id}`)
+      localStorage.removeItem("morngpt_theme")
+      
+      // Store account for 90-day restoration period
+      const deletionDate = new Date()
+      const restorationData = {
+        user: appUser,
+        chats: chatSessions,
+        bookmarks: bookmarkedMessages,
+        deletionDate: deletionDate.toISOString(),
+        restorationDeadline: new Date(deletionDate.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
+      }
+      localStorage.setItem(`morngpt_deleted_account_${appUser.id}`, JSON.stringify(restorationData))
+      
+      setAppUser(null)
+      setChatSessions([])
+      setBookmarkedMessages([])
+      setShowDeleteAccountDialog(false)
+      setShowEnhancedDeleteDialog(false)
+      setDeleteAccountStep("warning")
+      setDeleteConfirmationPhrase("")
+      setUserConfirmationInput("")
+      setTwoFACode("")
+      setGeneratedTwoFACode("")
+      setAccountDeletionDate(null)
+    }
+  }
+
+  const startEnhancedDeleteAccount = () => {
+    // Generate random confirmation phrase
+    const phrases = [
+      "DELETE MY ACCOUNT PERMANENTLY",
+      "I UNDERSTAND THIS IS IRREVERSIBLE",
+      "CONFIRM ACCOUNT DELETION NOW",
+      "PERMANENTLY REMOVE ALL DATA",
+      "FINAL CONFIRMATION TO DELETE"
+    ]
+    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)]
+    setDeleteConfirmationPhrase(randomPhrase)
+    setUserConfirmationInput("")
+    setDeleteAccountStep("warning")
+    setShowEnhancedDeleteDialog(true)
+  }
+
+  const generateTwoFACode = () => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    setGeneratedTwoFACode(code)
+    setTwoFACode("")
+    setDeleteAccountStep("2fa")
+    return code
+  }
+
+  const verifyDeleteAccount = () => {
+    if (userConfirmationInput.trim() === deleteConfirmationPhrase) {
+      const code = generateTwoFACode()
+      // In a real app, this would be sent via email/SMS
+      console.log("2FA Code for deletion:", code)
+    }
+  }
+
+  const confirmFinalDeletion = () => {
+    if (twoFACode === generatedTwoFACode) {
+      setDeleteAccountStep("final")
+      setAccountDeletionDate(new Date())
+    }
+  }
+
+  const restoreAccount = () => {
+    if (appUser) {
+      const restorationData = localStorage.getItem(`morngpt_deleted_account_${appUser.id}`)
+      if (restorationData) {
+        const data = JSON.parse(restorationData)
+        const deadline = new Date(data.restorationDeadline)
+        if (new Date() < deadline) {
+          // Restore account
+          setAppUser(data.user)
+          setChatSessions(data.chats)
+          setBookmarkedMessages(data.bookmarks)
+          localStorage.setItem("morngpt_user", JSON.stringify(data.user))
+          localStorage.setItem(`morngpt_chats_${data.user.id}`, JSON.stringify(data.chats))
+          localStorage.setItem(`morngpt_bookmarks_${data.user.id}`, JSON.stringify(data.bookmarks))
+          localStorage.removeItem(`morngpt_deleted_account_${appUser.id}`)
+          setShowEnhancedDeleteDialog(false)
+          setDeleteAccountStep("warning")
+          setAccountDeletionDate(null)
+        }
+      }
+    }
   }
 
   const simulateMultiGPTResponse = async (userPrompt: string): Promise<Message> => {
@@ -3252,44 +3326,47 @@ export default function MornGPTHomepage() {
                       </div>
                     </div>
 
-                    {/* Extension Marketplace */}
+                    {/* Enhanced Delete Account */}
                     <div className="space-y-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Extensions</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Account Security</h4>
                       <div className="space-y-3">
-                        <div className="p-4 bg-gray-50 dark:bg-[#565869] rounded-lg border border-gray-200 dark:border-[#565869]">
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                           <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                              <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
                             </div>
                             <div>
-                              <h5 className="font-medium text-gray-900 dark:text-[#ececf1]">Extension Marketplace</h5>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Enhance your MornGPT experience</p>
+                              <h5 className="font-medium text-red-900 dark:text-red-100">Delete Account</h5>
+                              <p className="text-sm text-red-700 dark:text-red-300">Permanent account removal with 90-day restoration</p>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                            Discover and install powerful extensions to customize your AI assistant experience. 
-                            From productivity tools to specialized AI models, find what works best for you.
+                          <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                            This action will permanently delete your account and all associated data. 
+                            You'll need to complete 2FA verification and write a confirmation phrase. 
+                            Your data will be stored for 90 days for potential restoration.
                           </p>
                           <div className="flex space-x-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                              onClick={startEnhancedDeleteAccount}
+                              className="bg-white dark:bg-[#40414f] text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
-                              <Globe2 className="w-4 h-4 mr-2" />
-                              Browse Extensions
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Account
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => setShowEnhancedDeleteDialog(true)}
                               className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
                             >
-                              <Settings className="w-4 h-4 mr-2" />
-                              Manage Installed
+                              <ShieldCheck className="w-4 h-4 mr-2" />
+                              Restore Account
                             </Button>
                           </div>
                           <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
-                            <strong>Coming Soon:</strong> Extension marketplace will be available in the next update.
+                            <strong>Security Note:</strong> Account deletion requires 2FA verification and confirmation phrase.
                           </div>
                         </div>
                       </div>
@@ -3403,6 +3480,174 @@ export default function MornGPTHomepage() {
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Enhanced Delete Account Dialog */}
+        <Dialog open={showEnhancedDeleteDialog} onOpenChange={setShowEnhancedDeleteDialog}>
+          <DialogContent className="sm:max-w-lg bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-red-600 dark:text-red-400">
+                <Shield className="w-5 h-5" />
+                <span>Enhanced Account Deletion</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            {deleteAccountStep === "warning" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-red-900 dark:text-red-100 mb-2">Account Deletion Process</h4>
+                      <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
+                        <li>• You must write a confirmation phrase exactly as shown</li>
+                        <li>• Complete 2FA verification via email/SMS</li>
+                        <li>• Your data will be stored for 90 days for restoration</li>
+                        <li>• After 90 days, data is permanently deleted</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEnhancedDeleteDialog(false)}
+                    className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => setDeleteAccountStep("confirmation")}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {deleteAccountStep === "confirmation" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
+                    <strong>Step 1:</strong> Write the following phrase exactly as shown to confirm deletion:
+                  </p>
+                  <div className="p-3 bg-white dark:bg-[#40414f] border border-yellow-300 dark:border-yellow-700 rounded font-mono text-sm text-gray-900 dark:text-[#ececf1]">
+                    {deleteConfirmationPhrase}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmation-input" className="text-gray-900 dark:text-[#ececf1]">
+                    Type the confirmation phrase:
+                  </Label>
+                  <Input
+                    id="confirmation-input"
+                    value={userConfirmationInput}
+                    onChange={(e) => setUserConfirmationInput(e.target.value)}
+                    placeholder="Enter the phrase exactly as shown above"
+                    className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeleteAccountStep("warning")}
+                    className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={verifyDeleteAccount}
+                    disabled={userConfirmationInput.trim() !== deleteConfirmationPhrase}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                  >
+                    Verify & Continue
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {deleteAccountStep === "2fa" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <div className="flex items-start space-x-3">
+                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">2FA Verification</h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        A 6-digit verification code has been sent to your email/SMS. 
+                        Enter it below to complete the deletion process.
+                      </p>
+                      <div className="mt-2 p-2 bg-white dark:bg-[#40414f] border border-blue-300 dark:border-blue-700 rounded font-mono text-sm text-gray-900 dark:text-[#ececf1]">
+                        Code: {generatedTwoFACode}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="2fa-input" className="text-gray-900 dark:text-[#ececf1]">
+                    6-Digit Verification Code:
+                  </Label>
+                  <Input
+                    id="2fa-input"
+                    value={twoFACode}
+                    onChange={(e) => setTwoFACode(e.target.value)}
+                    placeholder="000000"
+                    maxLength={6}
+                    className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeleteAccountStep("confirmation")}
+                    className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={confirmFinalDeletion}
+                    disabled={twoFACode.length !== 6}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                  >
+                    Verify & Delete
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {deleteAccountStep === "final" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                  <div className="flex items-start space-x-3">
+                    <Check className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Account Deleted Successfully</h4>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        Your account has been deleted. Your data will be stored for 90 days for potential restoration.
+                      </p>
+                      {accountDeletionDate && (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                          Deleted on: {accountDeletionDate.toLocaleDateString()} at {accountDeletionDate.toLocaleTimeString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    <strong>Restoration Period:</strong> You can restore your account within 90 days by logging in again.
+                  </p>
+                </div>
+                <Button
+                  onClick={deleteUserAccount}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Complete Deletion
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
