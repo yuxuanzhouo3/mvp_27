@@ -3053,8 +3053,8 @@ export default function MornGPTHomepage() {
               </DialogTitle>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]" type="always">
-              <div className="p-1">
+            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]" type="always" style={{ height: 'calc(90vh - 120px)' }}>
+              <div className="p-1" style={{ minHeight: 'calc(90vh - 100px)' }}>
                 <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="profile" className="flex items-center space-x-2">
@@ -3263,21 +3263,21 @@ export default function MornGPTHomepage() {
                             <Label className="text-gray-900 dark:text-[#ececf1]">Theme</Label>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
                           </div>
-                          <Select
-                            value={appUser?.settings?.theme || "auto"}
-                            onValueChange={(value) => {
-                              updateUserSettings({ theme: value as "light" | "dark" | "auto" })
-                              applyTheme(value as "light" | "dark" | "auto")
-                            }}
-                          >
-                            <SelectTrigger className="w-32 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
-                              <SelectContent>
-                                <SelectItem value="light">Light</SelectItem>
-                                <SelectItem value="dark">Dark</SelectItem>
-                                <SelectItem value="auto">Auto</SelectItem>
-                              </SelectContent>
-                            </SelectTrigger>
-                          </Select>
+                                                     <Select
+                             value={appUser?.settings?.theme || "auto"}
+                             onValueChange={(value) => {
+                               updateUserSettings({ theme: value as "light" | "dark" | "auto" })
+                               applyTheme(value as "light" | "dark" | "auto")
+                             }}
+                           >
+                             <SelectTrigger className="w-40 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#40414f]">
+                               <SelectContent className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]">
+                                 <SelectItem value="light" className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]">Light</SelectItem>
+                                 <SelectItem value="dark" className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]">Dark</SelectItem>
+                                 <SelectItem value="auto" className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]">Auto</SelectItem>
+                               </SelectContent>
+                             </SelectTrigger>
+                           </Select>
                         </div>
                       </div>
                     </div>
@@ -3397,7 +3397,17 @@ export default function MornGPTHomepage() {
                   </div>
                   
                   {/* Extra space to ensure scrollbar appears */}
-                  <div className="h-20"></div>
+                  <div className="h-40"></div>
+                  
+                  {/* Additional content to force scrolling */}
+                  <div className="p-4 bg-gray-50 dark:bg-[#565869] rounded-lg border border-gray-200 dark:border-[#565869]">
+                    <h4 className="font-medium text-gray-900 dark:text-[#ececf1] mb-3">Additional Information</h4>
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                      <p>This section ensures there's enough content to make the scrollbar visible.</p>
+                      <p>The scrollbar should appear on the right side of this dialog.</p>
+                      <p>You can scroll down to see the Account Security section below.</p>
+                    </div>
+                  </div>
 
                     {/* Account Actions */}
                     <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
