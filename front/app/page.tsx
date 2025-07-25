@@ -3053,7 +3053,7 @@ export default function MornGPTHomepage() {
               </DialogTitle>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
+            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]" type="always">
               <div className="p-1">
                 <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-6">
@@ -3376,8 +3376,28 @@ export default function MornGPTHomepage() {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Additional security information */}
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-start space-x-3">
+                          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                          <div>
+                            <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Account Security Features</h5>
+                            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                              <li>• Enhanced 2FA verification for account deletion</li>
+                              <li>• 90-day account restoration period</li>
+                              <li>• Secure confirmation phrase requirement</li>
+                              <li>• Automatic support team notification</li>
+                              <li>• Data encryption and secure storage</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  
+                  {/* Extra space to ensure scrollbar appears */}
+                  <div className="h-20"></div>
 
                     {/* Account Actions */}
                     <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
