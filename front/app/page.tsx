@@ -374,6 +374,9 @@ export default function MornGPTHomepage() {
   })
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [profileSaveStatus, setProfileSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle")
+  
+  // Combined settings state
+  const [activeSettingsTab, setActiveSettingsTab] = useState("profile")
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -1635,14 +1638,6 @@ export default function MornGPTHomepage() {
                             >
                               <User className="w-4 h-4 mr-2" />
                               Profile & Settings
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
-                              onClick={() => setShowSettingsDialog(true)}
-                            >
-                              <Settings className="w-4 h-4 mr-2" />
-                              Preferences
                             </Button>
                             {!appUser.isPro && (
                               <Button
@@ -2922,9 +2917,9 @@ export default function MornGPTHomepage() {
           </DialogContent>
         </Dialog>
 
-        {/* User Profile Dialog */}
+        {/* Combined Profile & Settings Dialog */}
         <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-          <DialogContent className="sm:max-w-2xl max-h-[90vh] bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] flex flex-col">
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
                 <User className="w-5 h-5" />
@@ -2933,7 +2928,20 @@ export default function MornGPTHomepage() {
             </DialogHeader>
 
             <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
-              <div className="space-y-6 p-1">
+              <div className="p-1">
+                <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="profile" className="flex items-center space-x-2">
+                      <User className="w-4 h-4" />
+                      <span>Profile</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="preferences" className="flex items-center space-x-2">
+                      <Settings className="w-4 h-4" />
+                      <span>Preferences</span>
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="profile" className="space-y-6">
               {/* Profile Header */}
               <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
                 <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
@@ -3121,6 +3129,113 @@ export default function MornGPTHomepage() {
                   </Button>
                 </div>
               </div>
+            </div>
+                  </TabsContent>
+
+                  <TabsContent value="preferences" className="space-y-6">
+                    {/* Theme Settings */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Appearance</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label className="text-gray-900 dark:text-[#ececf1]">Theme</Label>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
+                          </div>
+                          <Select
+                            value={appUser?.settings?.theme || "auto"}
+                            onValueChange={(value) => updateUserSettings({ theme: value as "light" | "dark" | "auto" })}
+                          >
+                            <SelectTrigger className="w-32 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                              <SelectContent>
+                                <SelectItem value="light">Light</SelectItem>
+                                <SelectItem value="dark">Dark</SelectItem>
+                                <SelectItem value="auto">Auto</SelectItem>
+                              </SelectContent>
+                            </SelectTrigger>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notification Settings */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Notifications</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label className="text-gray-900 dark:text-[#ececf1]">Push Notifications</Label>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Receive notifications for new messages</p>
+                          </div>
+                          <Switch
+                            checked={appUser?.settings?.notifications || false}
+                            onCheckedChange={(checked) => updateUserSettings({ notifications: checked })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label className="text-gray-900 dark:text-[#ececf1]">Sound Effects</Label>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Play sounds for notifications</p>
+                          </div>
+                          <Switch
+                            checked={appUser?.settings?.soundEnabled || false}
+                            onCheckedChange={(checked) => updateUserSettings({ soundEnabled: checked })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Data Settings */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Data & Privacy</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label className="text-gray-900 dark:text-[#ececf1]">Auto Save</Label>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Automatically save your conversations</p>
+                          </div>
+                          <Switch
+                            checked={appUser?.settings?.autoSave || false}
+                            onCheckedChange={(checked) => updateUserSettings({ autoSave: checked })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Account Actions */}
+                    <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] mb-3">Account Actions</h4>
+                      <div className="space-y-2">
+                        {!appUser?.isPro && (
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowUpgradeDialog(true)}
+                            className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          >
+                            <Crown className="w-4 h-4 mr-2 text-yellow-500" />
+                            Upgrade to Pro
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          onClick={confirmLogout}
+                          className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Sign Out
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={confirmDeleteAccount}
+                          className="w-full justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Account
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
             </div>
             </ScrollArea>
           </DialogContent>
