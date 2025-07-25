@@ -3256,13 +3256,13 @@ export default function MornGPTHomepage() {
 
                   <TabsContent value="preferences" className="space-y-4">
                     {/* Theme Settings */}
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Appearance</h4>
-                      <div className="space-y-1">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-sm">Appearance</h4>
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-0">
-                            <Label className="text-gray-900 dark:text-[#ececf1] text-xs font-normal">Theme</Label>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Choose your preferred theme</p>
+                          <div className="space-y-1">
+                            <Label className="text-gray-900 dark:text-[#ececf1] text-sm font-normal">Theme</Label>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
                           </div>
                           <Select
                             value={appUser?.settings?.theme || "auto"}
