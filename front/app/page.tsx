@@ -3349,6 +3349,16 @@ export default function MornGPTHomepage() {
                                   <Trash2 className="w-3 h-3 mr-1" />
                                   Delete Account
                                 </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled
+                                  className="bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600 cursor-not-allowed text-xs"
+                                  title="Contact support team to restore your account"
+                                >
+                                  <ShieldCheck className="w-3 h-3 mr-1" />
+                                  Restore Account
+                                </Button>
                               </div>
                               <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
                                 <strong>Security Note:</strong> Account deletion requires 2FA verification and confirmation phrase.
@@ -3360,9 +3370,9 @@ export default function MornGPTHomepage() {
                               <div className="flex items-start space-x-2">
                                 <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
                                 <div>
-                                  <h5 className="font-medium text-blue-900 dark:text-blue-100 text-xs mb-1">Need to Restore Your Account?</h5>
+                                  <h5 className="font-medium text-blue-900 dark:text-blue-100 text-xs mb-1">Restore Account Button Disabled</h5>
                                   <p className="text-xs text-blue-700 dark:text-blue-300 leading-tight mb-2">
-                                    If you've deleted your account and need to restore it within 90 days, please contact our support team.
+                                    The "Restore Account" button above is disabled for security. To restore your account within 90 days, please contact our support team first.
                                   </p>
                                   <div className="flex items-center space-x-2">
                                     <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Email:</span>
@@ -3374,7 +3384,7 @@ export default function MornGPTHomepage() {
                                     </a>
                                   </div>
                                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                    Include your email address and deletion date for faster processing.
+                                    Include your email address and deletion date. Support will enable the restore button after verification.
                                   </p>
                                 </div>
                               </div>
