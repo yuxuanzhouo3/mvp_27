@@ -1672,32 +1672,38 @@ export default function MornGPTHomepage() {
                       className="hidden" 
                       id="file-upload"
                       accept={ALLOWED_FILE_TYPES.join(',')}
-                      disabled={!appUser || isUploading || uploadedFiles.length >= MAX_FILES}
+                      disabled={!appUser || isUploading}
                     />
-                    <label htmlFor="file-upload">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className={`h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 ${
-                          isUploading ? 'animate-pulse' : ''
-                        } ${uploadedFiles.length >= MAX_FILES ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={
-                          uploadedFiles.length >= MAX_FILES 
-                            ? `Maximum ${MAX_FILES} files reached` 
-                            : isUploading 
-                              ? 'Uploading...' 
-                              : `Upload files (max ${MAX_FILES}, ${MAX_FILE_SIZE / (1024 * 1024)}MB each)`
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 ${
+                        isUploading ? 'animate-pulse' : ''
+                      }`}
+                      title={
+                        uploadedFiles.length >= MAX_FILES 
+                          ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
+                          : isUploading 
+                            ? 'Uploading...' 
+                            : `Upload files (max ${MAX_FILES}, ${MAX_FILE_SIZE / (1024 * 1024)}MB each)`
+                      }
+                      type="button"
+                      disabled={!appUser || isUploading}
+                      onClick={() => {
+                        if (uploadedFiles.length >= MAX_FILES) {
+                          setUploadError(`Maximum ${MAX_FILES} files reached. Please remove some files first.`)
+                          setTimeout(() => setUploadError(""), 3000)
+                          return
                         }
-                        type="button"
-                        disabled={!appUser || isUploading || uploadedFiles.length >= MAX_FILES}
-                      >
-                        {isUploading ? (
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                        ) : (
-                          <Paperclip className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </label>
+                        document.getElementById('file-upload')?.click()
+                      }}
+                    >
+                      {isUploading ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                      ) : (
+                        <Paperclip className="w-4 h-4" />
+                      )}
+                    </Button>
 
                     {/* Prompt History Button */}
                     {promptHistory.length > 0 && (
