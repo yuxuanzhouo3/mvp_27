@@ -697,6 +697,7 @@ export default function MornGPTHomepage() {
   }
 
   const handleLogout = () => {
+    console.log("handleLogout called") // Debug log
     // Clear user state
     setAppUser(null)
     localStorage.removeItem("morngpt_user")
@@ -813,6 +814,7 @@ export default function MornGPTHomepage() {
   }
 
   const confirmLogout = () => {
+    console.log("confirmLogout called") // Debug log
     setShowLogoutConfirmDialog(true)
   }
 
@@ -1610,59 +1612,59 @@ export default function MornGPTHomepage() {
                   </Button>
                   {appUser ? (
                     <div className="relative">
-                      <Select>
-                        <SelectTrigger className="w-40 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
-                          <div className="flex items-center space-x-2">
-                            {appUser.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
-                            <User className="w-4 h-4" />
-                            <span className="truncate">{appUser.name}</span>
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
-                          <SelectItem
-                            value="profile"
-                            className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] cursor-pointer"
-                            onSelect={openProfileDialog}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-40 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                           >
                             <div className="flex items-center space-x-2">
+                              {appUser.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
                               <User className="w-4 h-4" />
-                              <span>Profile & Settings</span>
+                              <span className="truncate">{appUser.name}</span>
+                              <ChevronDown className="w-3 h-3" />
                             </div>
-                          </SelectItem>
-                          <SelectItem
-                            value="settings"
-                            className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] cursor-pointer"
-                            onSelect={() => setShowSettingsDialog(true)}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Settings className="w-4 h-4" />
-                              <span>Preferences</span>
-                            </div>
-                          </SelectItem>
-                          {!appUser.isPro && (
-                            <SelectItem
-                              value="upgrade"
-                              className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] cursor-pointer"
-                              onSelect={() => setShowUpgradeDialog(true)}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] p-1">
+                          <div className="space-y-1">
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                              onClick={openProfileDialog}
                             >
-                              <div className="flex items-center space-x-2">
-                                <Crown className="w-4 h-4 text-yellow-500" />
-                                <span>Upgrade to Pro</span>
-                              </div>
-                            </SelectItem>
-                          )}
-                          <SelectItem
-                            value="logout"
-                            className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] cursor-pointer"
-                            onSelect={confirmLogout}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <LogOut className="w-4 h-4" />
-                              <span>Sign Out</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                              <User className="w-4 h-4 mr-2" />
+                              Profile & Settings
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                              onClick={() => setShowSettingsDialog(true)}
+                            >
+                              <Settings className="w-4 h-4 mr-2" />
+                              Preferences
+                            </Button>
+                            {!appUser.isPro && (
+                              <Button
+                                variant="ghost"
+                                className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                onClick={() => setShowUpgradeDialog(true)}
+                              >
+                                <Crown className="w-4 h-4 mr-2 text-yellow-500" />
+                                Upgrade to Pro
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                              onClick={confirmLogout}
+                            >
+                              <LogOut className="w-4 h-4 mr-2" />
+                              Sign Out
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   ) : (
                     <Button
