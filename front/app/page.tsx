@@ -3314,55 +3314,71 @@ export default function MornGPTHomepage() {
                     {/* Data Settings */}
 
 
-                    {/* Enhanced Delete Account */}
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Account Security</h4>
-                        <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
-                          <span className="text-xs font-medium text-red-700 dark:text-red-300">Important</span>
-                        </div>
-                      </div>
-                      <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
-                        <div className="space-y-3">
-                        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                              <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
-                            </div>
-                            <div>
-                              <h5 className="font-medium text-red-900 dark:text-red-100">Delete Account</h5>
-                              <p className="text-sm text-red-700 dark:text-red-300">Permanent account removal with 90-day restoration</p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-red-700 dark:text-red-300 mb-3">
-                            This action will permanently delete your account and all associated data. 
-                            You'll need to complete 2FA verification and write a confirmation phrase. 
-                            Your data will be stored for 90 days for potential restoration.
-                          </p>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={startEnhancedDeleteAccount}
-                              className="bg-white dark:bg-[#40414f] text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete Account
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowEnhancedDeleteDialog(true)}
-                              className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                            >
-                              <ShieldCheck className="w-4 h-4 mr-2" />
-                              Restore Account
-                            </Button>
-                          </div>
-                          <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
-                            <strong>Security Note:</strong> Account deletion requires 2FA verification and confirmation phrase.
+                                          {/* Enhanced Delete Account */}
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-xs">Account Security</h4>
+                          <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
+                            <span className="text-xs font-medium text-red-700 dark:text-red-300">Important</span>
                           </div>
                         </div>
+                        <div className="border-t border-gray-200 dark:border-[#565869] pt-3">
+                          <div className="space-y-2">
+                            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                                  <Shield className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                </div>
+                                <div>
+                                  <h5 className="font-medium text-red-900 dark:text-red-100 text-xs">Delete Account</h5>
+                                  <p className="text-xs text-red-700 dark:text-red-300">Permanent account removal with 90-day restoration</p>
+                                </div>
+                              </div>
+                              <p className="text-xs text-red-700 dark:text-red-300 mb-2 leading-tight">
+                                This action will permanently delete your account and all associated data. 
+                                You'll need to complete 2FA verification and write a confirmation phrase. 
+                                Your data will be stored for 90 days for potential restoration.
+                              </p>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={startEnhancedDeleteAccount}
+                                  className="bg-white dark:bg-[#40414f] text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Delete Account
+                                </Button>
+                              </div>
+                              <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-700 dark:text-yellow-300">
+                                <strong>Security Note:</strong> Account deletion requires 2FA verification and confirmation phrase.
+                              </div>
+                            </div>
+                            
+                            {/* Account Restoration Support */}
+                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <div className="flex items-start space-x-2">
+                                <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                                <div>
+                                  <h5 className="font-medium text-blue-900 dark:text-blue-100 text-xs mb-1">Need to Restore Your Account?</h5>
+                                  <p className="text-xs text-blue-700 dark:text-blue-300 leading-tight mb-2">
+                                    If you've deleted your account and need to restore it within 90 days, please contact our support team.
+                                  </p>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Email:</span>
+                                    <a 
+                                      href="mailto:support@morngpt.com" 
+                                      className="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-200"
+                                    >
+                                      support@morngpt.com
+                                    </a>
+                                  </div>
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                    Include your email address and deletion date for faster processing.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                       </div>
                       
                       {/* Additional security information */}
