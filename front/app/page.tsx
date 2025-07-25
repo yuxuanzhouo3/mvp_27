@@ -2924,15 +2924,16 @@ export default function MornGPTHomepage() {
 
         {/* User Profile Dialog */}
         <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-          <DialogContent className="sm:max-w-2xl bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
                 <User className="w-5 h-5" />
                 <span>Profile & Settings</span>
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
+              <div className="space-y-6 p-1">
               {/* Profile Header */}
               <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
                 <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
@@ -3121,6 +3122,7 @@ export default function MornGPTHomepage() {
                 </div>
               </div>
             </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
 
