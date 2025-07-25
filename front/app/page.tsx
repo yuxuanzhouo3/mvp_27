@@ -82,6 +82,16 @@ import {
   PaletteIcon,
   HelpCircle,
   ShieldIcon,
+  UserX,
+  Key,
+  Mail,
+  Phone,
+  Calendar,
+  Globe2,
+  Volume2,
+  VolumeX,
+  Save,
+  AlertTriangle,
 } from "lucide-react"
 
 const mornGPTCategories = [
@@ -348,6 +358,23 @@ export default function MornGPTHomepage() {
   const [sidebarScrollPosition, setSidebarScrollPosition] = useState(0)
   const [editingBookmarkId, setEditingBookmarkId] = useState<string>("")
   const [editingBookmarkName, setEditingBookmarkName] = useState<string>("")
+  
+  // Enhanced user profile state
+  const [showProfileDialog, setShowProfileDialog] = useState(false)
+  const [showLogoutConfirmDialog, setShowLogoutConfirmDialog] = useState(false)
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
+  const [userProfileForm, setUserProfileForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    bio: "",
+    location: "",
+    website: "",
+    timezone: "UTC",
+    language: "en",
+  })
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [profileSaveStatus, setProfileSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle")
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -736,6 +763,90 @@ export default function MornGPTHomepage() {
       setAppUser(updatedUser)
       localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
     }
+  }
+
+  // Enhanced user profile functions
+  const openProfileDialog = () => {
+    if (appUser) {
+      setUserProfileForm({
+        name: appUser.name,
+        email: appUser.email,
+        phone: "",
+        bio: "",
+        location: "",
+        website: "",
+        timezone: "UTC",
+        language: appUser.settings?.language || "en",
+      })
+      setShowProfileDialog(true)
+    }
+  }
+
+  const saveUserProfile = async () => {
+    if (!appUser) return
+    
+    setProfileSaveStatus("saving")
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const updatedUser = {
+        ...appUser,
+        name: userProfileForm.name,
+        email: userProfileForm.email,
+        settings: {
+          ...appUser.settings,
+          language: userProfileForm.language,
+        },
+      }
+      
+      setAppUser(updatedUser)
+      localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
+      setProfileSaveStatus("success")
+      setIsEditingProfile(false)
+      
+      setTimeout(() => setProfileSaveStatus("idle"), 2000)
+    } catch (error) {
+      setProfileSaveStatus("error")
+      setTimeout(() => setProfileSaveStatus("idle"), 3000)
+    }
+  }
+
+  const confirmLogout = () => {
+    setShowLogoutConfirmDialog(true)
+  }
+
+  const confirmDeleteAccount = () => {
+    setShowDeleteAccountDialog(true)
+  }
+
+  const deleteUserAccount = () => {
+    // Clear all user data
+    localStorage.clear()
+    setAppUser(null)
+    setShowDeleteAccountDialog(false)
+    setShowProfileDialog(false)
+    
+    // Reset to default state
+    setChatSessions([
+      {
+        id: "1",
+        title: "Welcome to MornGPT",
+        messages: [],
+        model: "General",
+        modelType: "general",
+        category: "general",
+        lastUpdated: new Date(),
+        isModelLocked: false,
+      },
+    ])
+    setCurrentChatId("1")
+    setMessages([])
+    setPromptHistory([])
+    setBookmarkedMessages([])
+    
+    alert("Account deleted successfully")
   }
 
   const simulateMultiGPTResponse = async (userPrompt: string): Promise<Message> => {
@@ -1512,11 +1623,21 @@ export default function MornGPTHomepage() {
                           <SelectItem
                             value="profile"
                             className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] cursor-pointer"
-                            onSelect={() => setShowSettingsDialog(true)}
+                            onSelect={openProfileDialog}
                           >
                             <div className="flex items-center space-x-2">
                               <User className="w-4 h-4" />
                               <span>Profile & Settings</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem
+                            value="settings"
+                            className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] cursor-pointer"
+                            onSelect={() => setShowSettingsDialog(true)}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Settings className="w-4 h-4" />
+                              <span>Preferences</span>
                             </div>
                           </SelectItem>
                           {!appUser.isPro && (
@@ -1534,7 +1655,7 @@ export default function MornGPTHomepage() {
                           <SelectItem
                             value="logout"
                             className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] cursor-pointer"
-                            onSelect={handleLogout}
+                            onSelect={confirmLogout}
                           >
                             <div className="flex items-center space-x-2">
                               <LogOut className="w-4 h-4" />
@@ -2608,41 +2729,6 @@ export default function MornGPTHomepage() {
 
               <Separator className="bg-gray-200 dark:bg-[#565869]" />
 
-              {/* Account Actions */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900 dark:text-[#ececf1] flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  Account Actions
-                </h4>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 bg-transparent"
-                    onClick={() => {
-                      setShowSettingsDialog(false)
-                      setShowUpgradeDialog(true)
-                    }}
-                  >
-                    <Crown className="w-4 h-4 mr-2" />
-                    {appUser?.isPro ? 'Manage Subscription' : 'Upgrade to Pro'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 bg-transparent"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to sign out?')) {
-                        handleLogout()
-                      }
-                    }}
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </div>
-              </div>
-
               {/* Danger Zone */}
               <div className="space-y-4">
                 <h4 className="font-medium text-red-600 dark:text-red-400">Danger Zone</h4>
@@ -2651,33 +2737,14 @@ export default function MornGPTHomepage() {
                     variant="outline"
                     size="sm"
                     className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to clear all your data? This action cannot be undone.')) {
-                        // Clear all user data
-                        Object.keys(localStorage).forEach((key) => {
-                          if (key.startsWith("morngpt_")) {
-                            localStorage.removeItem(key)
-                          }
-                        })
-                        window.location.reload()
-                      }
-                    }}
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
                     Clear All Data
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                        handleLogout()
-                        alert('Account deletion would be processed here in a real application.')
-                      }
-                    }}
                   >
-                    <User className="w-4 h-4 mr-2" />
                     Delete Account
                   </Button>
                 </div>
@@ -2851,6 +2918,280 @@ export default function MornGPTHomepage() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* User Profile Dialog */}
+        <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
+          <DialogContent className="sm:max-w-2xl bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <User className="w-5 h-5" />
+                <span>Profile & Settings</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Profile Header */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{appUser?.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{appUser?.email}</p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    {appUser?.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {appUser?.isPro ? "Pro Member" : "Free User"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Form */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Personal Information</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditingProfile(!isEditingProfile)}
+                    className="text-gray-600 dark:text-gray-400"
+                  >
+                    {isEditingProfile ? "Cancel" : "Edit"}
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="profileName" className="text-gray-900 dark:text-[#ececf1]">
+                      Full Name
+                    </Label>
+                    <Input
+                      id="profileName"
+                      value={userProfileForm.name}
+                      onChange={(e) => setUserProfileForm({ ...userProfileForm, name: e.target.value })}
+                      disabled={!isEditingProfile}
+                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="profileEmail" className="text-gray-900 dark:text-[#ececf1]">
+                      Email Address
+                    </Label>
+                    <Input
+                      id="profileEmail"
+                      type="email"
+                      value={userProfileForm.email}
+                      onChange={(e) => setUserProfileForm({ ...userProfileForm, email: e.target.value })}
+                      disabled={!isEditingProfile}
+                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="profilePhone" className="text-gray-900 dark:text-[#ececf1]">
+                      Phone Number
+                    </Label>
+                    <Input
+                      id="profilePhone"
+                      value={userProfileForm.phone}
+                      onChange={(e) => setUserProfileForm({ ...userProfileForm, phone: e.target.value })}
+                      disabled={!isEditingProfile}
+                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="profileLanguage" className="text-gray-900 dark:text-[#ececf1]">
+                      Language
+                    </Label>
+                    <Select
+                      value={userProfileForm.language}
+                      onValueChange={(value) => setUserProfileForm({ ...userProfileForm, language: value })}
+                      disabled={!isEditingProfile}
+                    >
+                      <SelectTrigger className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                        <SelectContent>
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="es">Spanish</SelectItem>
+                          <SelectItem value="fr">French</SelectItem>
+                          <SelectItem value="de">German</SelectItem>
+                          <SelectItem value="zh">Chinese</SelectItem>
+                        </SelectContent>
+                      </SelectTrigger>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="profileBio" className="text-gray-900 dark:text-[#ececf1]">
+                    Bio
+                  </Label>
+                  <Textarea
+                    id="profileBio"
+                    value={userProfileForm.bio}
+                    onChange={(e) => setUserProfileForm({ ...userProfileForm, bio: e.target.value })}
+                    disabled={!isEditingProfile}
+                    placeholder="Tell us about yourself..."
+                    className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  />
+                </div>
+
+                {isEditingProfile && (
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={saveUserProfile}
+                      disabled={profileSaveStatus === "saving"}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {profileSaveStatus === "saving" ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Saving...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <Save className="w-4 h-4" />
+                          <span>Save Changes</span>
+                        </div>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditingProfile(false)}
+                      className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+
+                {profileSaveStatus === "success" && (
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <p className="text-sm text-green-600 dark:text-green-400">Profile updated successfully!</p>
+                  </div>
+                )}
+
+                {profileSaveStatus === "error" && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <p className="text-sm text-red-600 dark:text-red-400">Failed to update profile. Please try again.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Account Actions */}
+              <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
+                <h4 className="font-medium text-gray-900 dark:text-[#ececf1] mb-3">Account Actions</h4>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowSettingsDialog(true)}
+                    className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Preferences & Settings
+                  </Button>
+                  {!appUser?.isPro && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowUpgradeDialog(true)}
+                      className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                    >
+                      <Crown className="w-4 h-4 mr-2 text-yellow-500" />
+                      Upgrade to Pro
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={confirmLogout}
+                    className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={confirmDeleteAccount}
+                    className="w-full justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <UserX className="w-4 h-4 mr-2" />
+                    Delete Account
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Logout Confirmation Dialog */}
+        <Dialog open={showLogoutConfirmDialog} onOpenChange={setShowLogoutConfirmDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <LogOut className="w-5 h-5" />
+                <span>Confirm Sign Out</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-gray-700 dark:text-gray-300">
+                Are you sure you want to sign out? Your current session will be ended.
+              </p>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLogoutConfirmDialog(false)}
+                  className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowLogoutConfirmDialog(false)
+                    handleLogout()
+                  }}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Account Confirmation Dialog */}
+        <Dialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-red-600 dark:text-red-400">
+                <AlertTriangle className="w-5 h-5" />
+                <span>Delete Account</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  <strong>Warning:</strong> This action cannot be undone. All your data, including chats, bookmarks, and settings will be permanently deleted.
+                </p>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300">
+                Are you absolutely sure you want to delete your account?
+              </p>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteAccountDialog(false)}
+                  className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={deleteUserAccount}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Delete Account
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
