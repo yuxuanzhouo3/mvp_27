@@ -82,7 +82,6 @@ import {
   PaletteIcon,
   HelpCircle,
   ShieldIcon,
-  UserX,
   Key,
   Mail,
   Phone,
@@ -3114,7 +3113,7 @@ export default function MornGPTHomepage() {
                     onClick={confirmDeleteAccount}
                     className="w-full justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
-                    <UserX className="w-4 h-4 mr-2" />
+                    <Trash2 className="w-4 h-4 mr-2" />
                     Delete Account
                   </Button>
                 </div>
