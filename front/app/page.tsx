@@ -1,11 +1,11 @@
+"use client"
+
 /**
  * Copyright © 2025 Yuxuan Zhou. All rights reserved.
  * 
  * This file is part of the MornGPT Homepage application.
  * Unauthorized copying, distribution, or use is strictly prohibited.
  */
-
-"use client"
 
 import type React from "react"
 
@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
@@ -76,6 +76,7 @@ import {
   Moon,
   Share,
   Download,
+  Upload,
   Star,
   ChevronUp,
   Bell,
@@ -98,7 +99,11 @@ import {
   Laptop,
   Tablet,
   XCircle,
+  Keyboard,
+  Navigation,
   Chrome,
+  Scale,
+  Film,
 } from "lucide-react"
 
 const mornGPTCategories = [
@@ -126,6 +131,8 @@ const mornGPTCategories = [
     description: "Orchestrates multiple AI models to solve complex problems by breaking them into specialized tasks",
     color: "bg-indigo-500",
   },
+  { id: "l", name: "AI Lawyer", icon: Scale, description: "Legal consultation and document review", color: "bg-emerald-500" },
+  { id: "n", name: "Entertainment Advisor", icon: Film, description: "Movie, music, and entertainment recommendations", color: "bg-fuchsia-500" },
   { id: "o", name: "Housing", icon: Home, description: "Real estate and accommodation", color: "bg-orange-500" },
   {
     id: "p",
@@ -169,6 +176,8 @@ const externalModels = [
   { name: "Mistral 7B", provider: "Mistral AI", description: "Efficient European model", type: "free" },
   { name: "Phi-3 Mini", provider: "Microsoft", description: "Compact but powerful", type: "free" },
   { name: "CodeLlama", provider: "Meta", description: "Specialized for coding tasks", type: "free" },
+  { name: "Llama 3.1 70B", provider: "Meta", description: "High-performance open source model", type: "free" },
+  { name: "Gemini 1.5 Flash", provider: "Google", description: "Fast multimodal processing", type: "free" },
   {
     name: "GPT-4o Mini",
     provider: "OpenAI",
@@ -204,6 +213,67 @@ const externalModels = [
     description: "Highest quality responses",
     type: "popular",
   },
+  {
+    name: "GPT-4o",
+    provider: "OpenAI",
+    price: "$5/1M tokens",
+    description: "Latest multimodal model",
+    type: "premium",
+  },
+  {
+    name: "Claude 3.5 Haiku",
+    provider: "Anthropic",
+    price: "$0.25/1M tokens",
+    description: "Fast and cost-effective",
+    type: "premium",
+  },
+  {
+    name: "Gemini 1.5 Flash",
+    provider: "Google",
+    price: "$0.75/1M tokens",
+    description: "Fast multimodal processing",
+    type: "premium",
+  },
+  {
+    name: "GPT-4 Turbo 128K",
+    provider: "OpenAI",
+    price: "$12/1M tokens",
+    description: "Extended context window",
+    type: "premium",
+  },
+]
+
+const specializedProducts = [
+  // Business & Professional
+  { id: "a1", name: "Growth Advisory", icon: "📈", description: "Business development and market analysis", model: "Claude 3.5 Sonnet", category: "business", url: "https://mornhub.net" },
+  { id: "b1", name: "Interview/Job", icon: "💼", description: "Career development and interview prep", model: "GPT-4o Mini", category: "career", url: "https://mornhub.pics/interview" },
+  { id: "l1", name: "AI Lawyer", icon: "⚖️", description: "Legal consultation and document review", model: "Claude 3.5 Sonnet", category: "legal", url: "https://mornhub.pics/lawyer" },
+  
+  // Technology & Development
+  { id: "c1", name: "AI Coder", icon: "💻", description: "Advanced coding assistant", model: "CodeLlama", category: "development", url: "https://mornhub.pics/coder" },
+  { id: "h1", name: "Multi-GPT", icon: "🤖", description: "Orchestrates multiple AI models to solve complex tasks", model: "GPT-4o Mini", category: "productivity", url: "https://mornhub.pics/multigpt" },
+  { id: "w1", name: "Content Generation", icon: "🧠", description: "Creative content creation", model: "GPT-4o Mini", category: "creative", url: "https://mornhub.pics" },
+  
+  // Health & Security
+  { id: "e1", name: "Medical Advice", icon: "❤️", description: "Health consultation AI", model: "Claude 3.5 Sonnet", category: "health", url: "https://mornhub.pics/medical" },
+  { id: "d1", name: "Content Detection", icon: "🛡️", description: "Fake content verification", model: "Claude 3.5 Sonnet", category: "security", url: "https://mornhub.pics/detect" },
+  { id: "z1", name: "AI Protection", icon: "🔒", description: "AI safety and security", model: "Claude 3.5 Sonnet", category: "security", url: "https://mornhub.pics/protection" },
+  
+  // Education & Learning
+  { id: "q1", name: "AI Teacher", icon: "🎓", description: "Personalized learning system", model: "Claude 3.5 Sonnet", category: "education", url: "https://mornhub.pics/teacher" },
+  
+  // Lifestyle & Entertainment
+  { id: "n1", name: "AI Entertainment Advisor", icon: "🎬", description: "Movie, music, and entertainment recommendations", model: "GPT-4o Mini", category: "entertainment", url: "https://mornhub.pics/entertainment" },
+  { id: "o1", name: "Housing", icon: "🏠", description: "Real estate and accommodation", model: "Claude 3.5 Sonnet", category: "lifestyle", url: "https://mornhub.homes" },
+  { id: "t1", name: "Fashion", icon: "👕", description: "Personalized styling advice", model: "GPT-4o Mini", category: "lifestyle", url: "https://mornhub.pics/fashion" },
+  { id: "u1", name: "Food & Dining", icon: "🍽️", description: "Restaurant and food discovery", model: "Claude 3.5 Sonnet", category: "food", url: "https://mornhub.pics/food" },
+  
+  // Travel & Shopping
+  { id: "r1", name: "Travel Planning", icon: "✈️", description: "Intelligent travel assistance", model: "GPT-4o Mini", category: "travel", url: "https://mornhub.pics/travel" },
+  { id: "s1", name: "Product Search", icon: "🔍", description: "Smart product recommendations", model: "Claude 3.5 Sonnet", category: "shopping", url: "https://mornhub.pics/search" },
+  
+  // Social & Networking
+  { id: "p1", name: "Person Matching", icon: "👥", description: "Professional and personal matching", model: "GPT-4o Mini", category: "social", url: "https://mornhub.lat" },
 ]
 
 const pricingPlans = [
@@ -275,6 +345,7 @@ interface AppUser {
   email: string
   name: string
   isPro: boolean
+  isPaid: boolean
   avatar?: string
   settings?: {
     theme: "light" | "dark" | "auto"
@@ -282,6 +353,9 @@ interface AppUser {
     notifications: boolean
     soundEnabled: boolean
     autoSave: boolean
+    sendHotkey?: "enter" | "shift+enter" | "ctrl+enter" | "cmd+enter"
+    shortcutsEnabled?: boolean
+    adsEnabled?: boolean
   }
 }
 
@@ -388,14 +462,22 @@ export default function MornGPTHomepage() {
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false)
   const [showFontDialog, setShowFontDialog] = useState(false)
   const [showShortcutDialog, setShowShortcutDialog] = useState(false)
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [userProfileForm, setUserProfileForm] = useState({
     name: ""
   })
   
+  // Editable shortcuts state
+  const [editingShortcut, setEditingShortcut] = useState<string>("")
+  const [editingShortcutValue, setEditingShortcutValue] = useState<string>("")
+  const [customShortcuts, setCustomShortcuts] = useState<Record<string, string>>({})
+  const [shortcutConflict, setShortcutConflict] = useState<{shortcut: string, conflictingAction: string} | null>(null)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [resetConfirmData, setResetConfirmData] = useState<{ title: string, message: string, onConfirm: () => void } | null>(null)
+  
   // Download section and ads state
   const [showDownloadSection, setShowDownloadSection] = useState(false)
-  const [adsEnabled, setAdsEnabled] = useState(true)
   const [selectedPlatform, setSelectedPlatform] = useState<{platform: string, variant?: string} | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("credit-card")
   const [currentPlan, setCurrentPlan] = useState<"Basic" | "Pro" | "Enterprise" | null>(null)
@@ -420,6 +502,8 @@ export default function MornGPTHomepage() {
   useEffect(() => {
     const savedUser = localStorage.getItem("morngpt_user")
     const savedTheme = localStorage.getItem("morngpt_theme")
+    const savedPlan = localStorage.getItem("morngpt_current_plan")
+    const savedCustomShortcuts = localStorage.getItem("customShortcuts")
 
     if (savedUser) {
       setAppUser(JSON.parse(savedUser))
@@ -435,9 +519,22 @@ export default function MornGPTHomepage() {
       }
     }
 
+    if (savedPlan) {
+      setCurrentPlan(savedPlan as "Basic" | "Pro" | "Enterprise")
+    }
+
     if (savedTheme === "dark") {
       setIsDarkMode(true)
       document.documentElement.classList.add("dark")
+    }
+
+    // Load custom shortcuts
+    if (savedCustomShortcuts) {
+      try {
+        setCustomShortcuts(JSON.parse(savedCustomShortcuts))
+      } catch (error) {
+        console.error("Error loading custom shortcuts:", error)
+      }
     }
   }, [])
 
@@ -669,12 +766,16 @@ export default function MornGPTHomepage() {
         email: authForm.email,
         name: authForm.name,
         isPro: false,
+        isPaid: false,
         settings: {
           theme: "light",
           language: "en",
           notifications: true,
           soundEnabled: true,
           autoSave: true,
+          sendHotkey: "enter",
+          shortcutsEnabled: true,
+          adsEnabled: true,
         },
       }
       setAppUser(newUser)
@@ -686,12 +787,16 @@ export default function MornGPTHomepage() {
         email: authForm.email,
         name: authForm.email.split("@")[0],
         isPro: false,
+        isPaid: false,
         settings: {
           theme: "light",
           language: "en",
           notifications: true,
           soundEnabled: true,
           autoSave: true,
+          sendHotkey: "enter",
+          shortcutsEnabled: true,
+          adsEnabled: true,
         },
       }
       setAppUser(existingUser)
@@ -708,6 +813,7 @@ export default function MornGPTHomepage() {
       email: "user@gmail.com",
       name: "Google User",
       isPro: false,
+      isPaid: false,
       avatar: "https://lh3.googleusercontent.com/a/default-user=s96-c",
       settings: {
         theme: "light",
@@ -715,6 +821,9 @@ export default function MornGPTHomepage() {
         notifications: true,
         soundEnabled: true,
         autoSave: true,
+        sendHotkey: "enter",
+        shortcutsEnabled: true,
+        adsEnabled: true,
       },
     }
     setAppUser(googleUser)
@@ -772,9 +881,11 @@ export default function MornGPTHomepage() {
     e.preventDefault()
     if (appUser && selectedPlan) {
       // Simulate payment processing
-      const updatedUser = { ...appUser, isPro: true }
+      const updatedUser = { ...appUser, isPro: true, isPaid: true }
       setAppUser(updatedUser)
+      setCurrentPlan(selectedPlan.name as "Basic" | "Pro" | "Enterprise")
       localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
+      localStorage.setItem("morngpt_current_plan", selectedPlan.name)
       setShowPaymentDialog(false)
       alert(`Successfully upgraded to ${selectedPlan.name} plan! Welcome to MornGPT Pro!`)
     }
@@ -784,7 +895,18 @@ export default function MornGPTHomepage() {
     if (appUser) {
       const updatedUser = {
         ...appUser,
-        settings: { ...appUser.settings, ...newSettings },
+        settings: { 
+          theme: "light" as const,
+          language: "en",
+          notifications: true,
+          soundEnabled: true,
+          autoSave: true,
+          sendHotkey: "enter" as const,
+          shortcutsEnabled: true,
+          adsEnabled: false,
+          ...appUser.settings, 
+          ...newSettings 
+        },
       }
       setAppUser(updatedUser)
       localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
@@ -1334,8 +1456,684 @@ export default function MornGPTHomepage() {
     setShowUpgradeDialog(true)
   }
 
+  const handleSpecializedProductSelect = (product: typeof specializedProducts[0]) => {
+    // Navigate to the product URL if available
+    if (product.url) {
+      window.open(product.url, '_blank')
+      return
+    }
+    
+    // Fallback to creating a new chat if no URL
+    const model = externalModels.find(m => m.name === product.model)
+    if (model) {
+      createNewChat(product.category, "general", product.model)
+      const newChatId = Date.now().toString()
+      const newChat: ChatSession = {
+        id: newChatId,
+        title: `${product.name} - ${product.description}`,
+        messages: [],
+        model: product.model,
+        modelType: "general",
+        category: product.category,
+        lastUpdated: new Date(),
+        isModelLocked: false
+      }
+      setChatSessions(prev => [newChat, ...prev])
+      setCurrentChatId(newChatId)
+    }
+  }
+
+  // Helper function to check if the current key combination matches the hotkey setting
+  const checkHotkeyMatch = (e: React.KeyboardEvent, hotkey: string) => {
+    switch (hotkey) {
+      case "enter":
+        return e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey
+      case "shift+enter":
+        return e.key === "Enter" && e.shiftKey && !e.ctrlKey && !e.metaKey
+      case "ctrl+enter":
+        return e.key === "Enter" && e.ctrlKey && !e.shiftKey && !e.metaKey
+      case "cmd+enter":
+        return e.key === "Enter" && e.metaKey && !e.shiftKey && !e.ctrlKey
+      default:
+        return false
+    }
+  }
+
+  // Helper function to check if a keyboard event matches a custom shortcut
+  const checkShortcutMatch = (e: React.KeyboardEvent, action: string) => {
+    // Get the current shortcut for this action (custom or default)
+    const currentShortcut = getShortcutValue(action, getDefaultShortcut(action))
+    
+    console.log(`Checking shortcut for ${action}:`, {
+      currentShortcut,
+      key: e.key,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey
+    })
+    
+    if (!currentShortcut) {
+      console.log(`No shortcut found for action: ${action}`)
+      return false
+    }
+    
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+    const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey
+    
+    // Parse the shortcut string (e.g., "Ctrl/Cmd + K")
+    const parts = currentShortcut.split(' + ')
+    
+    // Check modifiers
+    if (parts.includes('Ctrl') || parts.includes('Cmd')) {
+      if (!cmdOrCtrl) return false
+    }
+    if (parts.includes('Shift')) {
+      if (!e.shiftKey) return false
+    }
+    if (parts.includes('Alt')) {
+      if (!e.altKey) return false
+    }
+    
+    // Check the main key
+    const mainKey = parts[parts.length - 1]
+    if (mainKey === 'Escape') {
+      return e.key === 'Escape'
+    } else if (mainKey === 'Enter') {
+      return e.key === 'Enter'
+    } else if (mainKey === 'Space') {
+      return e.key === ' '
+    } else if (mainKey === 'Tab') {
+      return e.key === 'Tab'
+    } else if (mainKey.startsWith('F') && mainKey.length > 1) {
+      // Function keys
+      return e.key === mainKey
+    } else if (mainKey === '↑') {
+      return e.key === 'ArrowUp'
+    } else if (mainKey === '↓') {
+      return e.key === 'ArrowDown'
+    } else if (mainKey === '←') {
+      return e.key === 'ArrowLeft'
+    } else if (mainKey === '→') {
+      return e.key === 'ArrowRight'
+    } else {
+      // Regular keys
+      return e.key.toLowerCase() === mainKey.toLowerCase()
+    }
+  }
+
+  // Comprehensive keyboard shortcuts handler
+  const handleGlobalKeyDown = (e: React.KeyboardEvent) => {
+    console.log("Global keydown event:", {
+      key: e.key,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey,
+      target: e.target,
+      appUser: !!appUser,
+      shortcutsEnabled: appUser?.settings?.shortcutsEnabled
+    })
+    
+    // Only handle shortcuts if they're enabled and user is logged in
+    if (!appUser?.settings?.shortcutsEnabled || !appUser) {
+      console.log("Shortcuts disabled or no user")
+      return
+    }
+
+    // Prevent shortcuts when typing in input fields
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      console.log("Ignoring keypress in input field")
+      return
+    }
+
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+    const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey
+
+                // Simple test - if you press 't', it should log
+            if (e.key === 't' && !cmdOrCtrl && !e.shiftKey) {
+              console.log("Test key 't' pressed - shortcuts are working!")
+            }
+
+            // Open Billing Management
+            if (checkShortcutMatch(e, "Open Billing")) {
+              console.log("Opening Billing Management")
+              setShowBillingDialog(true)
+              return
+            }
+
+            // Open Privacy Settings
+            if (checkShortcutMatch(e, "Open Privacy")) {
+              console.log("Opening Privacy Settings")
+              setShowPrivacyDialog(true)
+              return
+            }
+
+    // Navigation shortcuts
+    if (checkShortcutMatch(e, "New Chat")) {
+      e.preventDefault()
+      createNewChat()
+    }
+
+    if (checkShortcutMatch(e, "Search Chats")) {
+      e.preventDefault()
+      // Focus search in sidebar
+      const searchInput = document.querySelector('input[placeholder="Search chats..."]') as HTMLInputElement
+      if (searchInput) {
+        searchInput.focus()
+      }
+    }
+
+    // Model selection shortcuts
+    if (checkShortcutMatch(e, "Deep Thinking")) {
+      e.preventDefault()
+      handleQuickAction("deep-thinking")
+    }
+
+    if (checkShortcutMatch(e, "Creative Ideas")) {
+      e.preventDefault()
+      handleQuickAction("creative")
+    }
+
+    if (checkShortcutMatch(e, "Analyze")) {
+      e.preventDefault()
+      handleQuickAction("analyze")
+    }
+
+    if (checkShortcutMatch(e, "Problem Solve")) {
+      e.preventDefault()
+      handleQuickAction("solve")
+    }
+
+    // UI shortcuts
+    if (checkShortcutMatch(e, "Toggle Sidebar")) {
+      e.preventDefault()
+      setSidebarCollapsed(!sidebarCollapsed)
+    }
+
+    if (checkShortcutMatch(e, "Toggle Theme")) {
+      e.preventDefault()
+      toggleTheme()
+    }
+
+    if (checkShortcutMatch(e, "Settings")) {
+      e.preventDefault()
+      setShowSettingsDialog(true)
+    }
+
+    // Chat management shortcuts
+    if (cmdOrCtrl && e.key === 'w') {
+      e.preventDefault()
+      if (currentChatId !== "1") {
+        deleteChat(currentChatId)
+      }
+    }
+
+    // Message shortcuts
+    if (checkShortcutMatch(e, "Jump to Last")) {
+      e.preventDefault()
+      // Jump to last message
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    if (checkShortcutMatch(e, "Jump to Top")) {
+      e.preventDefault()
+      // Jump to top of chat
+      const chatContainer = document.querySelector('.scroll-area') as HTMLElement
+      if (chatContainer) {
+        chatContainer.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }
+
+    // File upload shortcut
+    if (checkShortcutMatch(e, "Upload Files")) {
+      e.preventDefault()
+      document.getElementById('file-upload')?.click()
+    }
+
+    // Downloads shortcut
+    if (checkShortcutMatch(e, "Downloads")) {
+      e.preventDefault()
+      setShowDownloadSection(true)
+    }
+
+    // Ask GPT shortcut
+    if (checkShortcutMatch(e, "Ask GPT")) {
+      e.preventDefault()
+      setIsAskGPTOpen(true)
+    }
+
+    // Prompt History shortcut
+    if (checkShortcutMatch(e, "Prompt History")) {
+      e.preventDefault()
+      setIsPromptHistoryOpen(true)
+    }
+
+    // Hotkeys menu shortcut
+    if (checkShortcutMatch(e, "Hotkeys Menu")) {
+      e.preventDefault()
+      setShowShortcutsHelp(true)
+    }
+
+    // Ask GPT shortcut
+    if (cmdOrCtrl && e.key === 'g') {
+      e.preventDefault()
+      setIsAskGPTOpen(!isAskGPTOpen)
+    }
+
+    // Bookmarks shortcut
+    if (cmdOrCtrl && e.key === 'm') {
+      e.preventDefault()
+      // Toggle bookmarks view
+      console.log("Toggle bookmarks - implement as needed")
+    }
+
+    // Download shortcut
+    if (cmdOrCtrl && e.key === 'j') {
+      e.preventDefault()
+      setShowDownloadSection(!showDownloadSection)
+    }
+
+    // Help shortcut
+    if (cmdOrCtrl && e.key === '/') {
+      e.preventDefault()
+      setShowShortcutsHelp(true)
+    }
+
+    // Escape key to close dialogs
+    if (checkShortcutMatch(e, "Close Dialogs")) {
+      setIsModelSelectorOpen(false)
+      setIsPromptHistoryOpen(false)
+      setIsAskGPTOpen(false)
+      setShowSettingsDialog(false)
+      setShowUpgradeDialog(false)
+      setShowDownloadSection(false)
+      setShowShortcutsHelp(false)
+    }
+  }
+
+  // Shortcut editing functions
+  const startEditingShortcut = (action: string, currentValue: string) => {
+    setEditingShortcut(action)
+    setEditingShortcutValue(currentValue)
+    setShortcutConflict(null) // Clear any previous conflict warning
+  }
+
+  const saveShortcut = (action: string) => {
+    // Just clear editing state since changes are saved immediately
+    setEditingShortcut("")
+    setEditingShortcutValue("")
+    setShortcutConflict(null) // Clear conflict warning when saving
+  }
+
+  const resetToDefaults = () => {
+    setCustomShortcuts({})
+    localStorage.removeItem('customShortcuts')
+  }
+
+  const resetNavigationShortcuts = () => {
+    const navigationActions = [
+      "New Chat", "Search Chats", "Toggle Sidebar", "Settings", 
+      "Toggle Theme", "Ask GPT", "Downloads", "Hotkeys Menu", "Close Dialogs"
+    ]
+    const newShortcuts = { ...customShortcuts }
+    navigationActions.forEach(action => {
+      delete newShortcuts[action]
+    })
+    setCustomShortcuts(newShortcuts)
+    localStorage.setItem('customShortcuts', JSON.stringify(newShortcuts))
+  }
+
+  const resetAIModelShortcuts = () => {
+    const aiModelActions = ["Deep Thinking", "Creative Ideas", "Analyze", "Problem Solve"]
+    const newShortcuts = { ...customShortcuts }
+    aiModelActions.forEach(action => {
+      delete newShortcuts[action]
+    })
+    setCustomShortcuts(newShortcuts)
+    localStorage.setItem('customShortcuts', JSON.stringify(newShortcuts))
+  }
+
+  const resetPromptsShortcuts = () => {
+    const promptsActions = ["Send Prompt", "Jump to Last", "Jump to Top", "Upload Files", "Prompt History"]
+    const newShortcuts = { ...customShortcuts }
+    promptsActions.forEach(action => {
+      delete newShortcuts[action]
+    })
+    setCustomShortcuts(newShortcuts)
+    localStorage.setItem('customShortcuts', JSON.stringify(newShortcuts))
+  }
+
+  const resetBillingShortcuts = () => {
+    const billingActions = ["Billing Management", "Payment History", "Update Payment", "Cancel Subscription", "Download Invoice"]
+    const newShortcuts = { ...customShortcuts }
+    billingActions.forEach(action => {
+      delete newShortcuts[action]
+    })
+    setCustomShortcuts(newShortcuts)
+    localStorage.setItem('customShortcuts', JSON.stringify(newShortcuts))
+  }
+
+  const resetPrivacyShortcuts = () => {
+    const privacyActions = ["Privacy Settings", "Data Export", "Delete Account", "Cookie Settings", "Security Settings"]
+    const newShortcuts = { ...customShortcuts }
+    privacyActions.forEach(action => {
+      delete newShortcuts[action]
+    })
+    setCustomShortcuts(newShortcuts)
+    localStorage.setItem('customShortcuts', JSON.stringify(newShortcuts))
+  }
+
+  const exportHotkeys = () => {
+    const exportData = {
+      customShortcuts,
+      userSettings: appUser?.settings,
+      exportDate: new Date().toISOString(),
+      version: "1.0"
+    }
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `mornGPT-hotkeys-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const importHotkeys = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          try {
+            const importData = JSON.parse(event.target?.result as string)
+            if (importData.customShortcuts) {
+              setCustomShortcuts(importData.customShortcuts)
+              localStorage.setItem('customShortcuts', JSON.stringify(importData.customShortcuts))
+            }
+            if (importData.userSettings) {
+              updateUserSettings(importData.userSettings)
+            }
+            // Show success message
+            alert('Hotkeys imported successfully!')
+          } catch (error) {
+            alert('Error importing hotkeys. Please check the file format.')
+          }
+        }
+        reader.readAsText(file)
+      }
+    }
+    input.click()
+  }
+
+  const showResetConfirmation = (title: string, message: string, onConfirm: () => void) => {
+    setResetConfirmData({ title, message, onConfirm })
+    setShowResetConfirm(true)
+  }
+
+  const handleResetConfirm = () => {
+    if (resetConfirmData) {
+      resetConfirmData.onConfirm()
+    }
+    setShowResetConfirm(false)
+    setResetConfirmData(null)
+  }
+
+  const handleResetCancel = () => {
+    setShowResetConfirm(false)
+    setResetConfirmData(null)
+  }
+
+  const cancelEditingShortcut = () => {
+    setEditingShortcut("")
+    setEditingShortcutValue("")
+    setShortcutConflict(null) // Clear conflict warning when canceling
+  }
+
+  const getDefaultShortcut = (action: string) => {
+    const defaultShortcuts: Record<string, string> = {
+      "New Chat": "Ctrl/Cmd + K",
+      "Search Chats": "Ctrl/Cmd + F",
+      "Toggle Sidebar": "Ctrl/Cmd + B",
+      "Settings": "Ctrl/Cmd + S",
+      "Toggle Theme": "Ctrl/Cmd + D",
+      "Ask GPT": "Ctrl/Cmd + G",
+      "Downloads": "Ctrl/Cmd + L",
+      "Hotkeys Menu": "Ctrl/Cmd + H",
+              "Open Billing": "Ctrl/Cmd + Q",
+      "Open Privacy": "Ctrl/Cmd + Y",
+              "Close Dialogs": "Ctrl/Cmd + I",
+      "Deep Thinking": "Ctrl/Cmd + 1",
+      "Creative Ideas": "Ctrl/Cmd + 2",
+      "Analyze": "Ctrl/Cmd + 3",
+      "Problem Solve": "Ctrl/Cmd + 4",
+      "Send Prompt": "Enter",
+      "Jump to Last": "Ctrl/Cmd + J",
+      "Jump to Top": "Ctrl/Cmd + T",
+      "Upload Files": "Ctrl/Cmd + U",
+      "Prompt History": "Ctrl/Cmd + P",
+      "Billing Management": "Ctrl/Cmd + M",
+      "Payment History": "Ctrl/Cmd + I",
+      "Update Payment": "Ctrl/Cmd + O",
+      "Cancel Subscription": "Ctrl/Cmd + X",
+      "Download Invoice": "Ctrl/Cmd + V",
+      "Privacy Settings": "Ctrl/Cmd + Y",
+      "Data Export": "Ctrl/Cmd + E",
+      "Delete Account": "Ctrl/Cmd + Delete",
+      "Cookie Settings": "Ctrl/Cmd + C",
+      "Security Settings": "Ctrl/Cmd + Z",
+      "Export Hotkeys": "Ctrl/Cmd + Shift + E"
+    }
+    return defaultShortcuts[action] || ""
+  }
+
+  const getShortcutValue = (action: string, defaultValue: string) => {
+    return customShortcuts[action] || defaultValue
+  }
+
+  const findShortcutConflict = (newShortcut: string, currentAction: string) => {
+    // Get all default shortcuts
+    const allShortcuts = [
+      { action: "New Chat", current: "Ctrl/Cmd + K" },
+      { action: "Search Chats", current: "Ctrl/Cmd + F" },
+      { action: "Toggle Sidebar", current: "Ctrl/Cmd + B" },
+      { action: "Settings", current: "Ctrl/Cmd + S" },
+      { action: "Toggle Theme", current: "Ctrl/Cmd + D" },
+      { action: "Ask GPT", current: "Ctrl/Cmd + G" },
+      { action: "Downloads", current: "Ctrl/Cmd + L" },
+      { action: "Hotkeys Menu", current: "Ctrl/Cmd + H" },
+              { action: "Open Billing", current: "Ctrl/Cmd + Q" },
+      { action: "Open Privacy", current: "Ctrl/Cmd + Y" },
+              { action: "Close Dialogs", current: "Ctrl/Cmd + I" },
+      { action: "Deep Thinking", current: "Ctrl/Cmd + 1" },
+      { action: "Creative Ideas", current: "Ctrl/Cmd + 2" },
+      { action: "Analyze", current: "Ctrl/Cmd + 3" },
+      { action: "Problem Solve", current: "Ctrl/Cmd + 4" },
+      { action: "Send Prompt", current: "Enter" },
+      { action: "Jump to Last", current: "Ctrl/Cmd + J" },
+      { action: "Jump to Top", current: "Ctrl/Cmd + T" },
+      { action: "Upload Files", current: "Ctrl/Cmd + U" },
+      { action: "Prompt History", current: "Ctrl/Cmd + P" },
+      { action: "Billing Management", current: "Ctrl/Cmd + M" },
+      { action: "Payment History", current: "Ctrl/Cmd + I" },
+      { action: "Update Payment", current: "Ctrl/Cmd + O" },
+      { action: "Cancel Subscription", current: "Ctrl/Cmd + X" },
+      { action: "Download Invoice", current: "Ctrl/Cmd + V" },
+      { action: "Privacy Settings", current: "Ctrl/Cmd + Y" },
+      { action: "Data Export", current: "Ctrl/Cmd + E" },
+      { action: "Delete Account", current: "Ctrl/Cmd + Delete" },
+      { action: "Cookie Settings", current: "Ctrl/Cmd + C" },
+      { action: "Security Settings", current: "Ctrl/Cmd + Z" },
+      { action: "Export Hotkeys", current: "Ctrl/Cmd + Shift + E" }
+    ]
+
+    // Check against default shortcuts
+    for (const shortcut of allShortcuts) {
+      if (shortcut.action !== currentAction && shortcut.current === newShortcut) {
+        return shortcut.action
+      }
+    }
+
+    // Check against custom shortcuts
+    for (const [action, customShortcut] of Object.entries(customShortcuts)) {
+      if (action !== currentAction && customShortcut === newShortcut) {
+        return action
+      }
+    }
+
+    return null
+  }
+
+  const handleShortcutKeyDown = (e: React.KeyboardEvent, action: string) => {
+    e.preventDefault()
+    
+    if (e.key === 'Enter') {
+      saveShortcut(action)
+    } else if (e.key === 'Escape') {
+      cancelEditingShortcut()
+    } else {
+      // Capture keyboard input and build shortcut string
+      const modifiers = []
+      if (e.ctrlKey) modifiers.push('Ctrl')
+      if (e.metaKey) modifiers.push('Cmd')
+      if (e.shiftKey) modifiers.push('Shift')
+      if (e.altKey) modifiers.push('Alt')
+      
+      let key = e.key
+      
+      // Handle special keys
+      if (e.key === ' ') key = 'Space'
+      else if (e.key === 'Tab') key = 'Tab'
+      else if (e.key === 'Backspace') key = 'Backspace'
+      else if (e.key === 'Delete') key = 'Delete'
+      else if (e.key === 'ArrowUp') key = '↑'
+      else if (e.key === 'ArrowDown') key = '↓'
+      else if (e.key === 'ArrowLeft') key = '←'
+      else if (e.key === 'ArrowRight') key = '→'
+      else if (e.key === 'Home') key = 'Home'
+      else if (e.key === 'End') key = 'End'
+      else if (e.key === 'PageUp') key = 'PageUp'
+      else if (e.key === 'PageDown') key = 'PageDown'
+      else if (e.key === 'Insert') key = 'Insert'
+      else if (e.key === 'F1') key = 'F1'
+      else if (e.key === 'F2') key = 'F2'
+      else if (e.key === 'F3') key = 'F3'
+      else if (e.key === 'F4') key = 'F4'
+      else if (e.key === 'F5') key = 'F5'
+      else if (e.key === 'F6') key = 'F6'
+      else if (e.key === 'F7') key = 'F7'
+      else if (e.key === 'F8') key = 'F8'
+      else if (e.key === 'F9') key = 'F9'
+      else if (e.key === 'F10') key = 'F10'
+      else if (e.key === 'F11') key = 'F11'
+      else if (e.key === 'F12') key = 'F12'
+      else if (e.key === 'Escape') key = 'Escape'
+      else if (e.key === 'Enter') key = 'Enter'
+      else if (e.key === 'Tab') key = 'Tab'
+      else if (e.key === 'CapsLock') key = 'CapsLock'
+      else if (e.key === 'NumLock') key = 'NumLock'
+      else if (e.key === 'ScrollLock') key = 'ScrollLock'
+      else if (e.key === 'Pause') key = 'Pause'
+      else if (e.key === 'PrintScreen') key = 'PrintScreen'
+      else if (e.key === 'ContextMenu') key = 'ContextMenu'
+      else if (e.key === 'Meta') return // Ignore Meta key alone
+      else if (e.key === 'Alt') return // Ignore Alt key alone
+      else if (e.key === 'Control') return // Ignore Control key alone
+      else if (e.key === 'Shift') return // Ignore Shift key alone
+      else if (e.key === 'Dead') return // Ignore dead keys
+      else if (e.key.length === 1) {
+        // Single character keys
+        key = e.key.toUpperCase()
+      }
+      
+      // Build the shortcut string
+      const shortcutString = modifiers.length > 0 ? `${modifiers.join(' + ')} + ${key}` : key
+      
+      // Check for conflicts
+      const conflictingAction = findShortcutConflict(shortcutString, action)
+      
+      if (conflictingAction) {
+        // Show conflict warning
+        setShortcutConflict({
+          shortcut: shortcutString,
+          conflictingAction: conflictingAction
+        })
+        setEditingShortcutValue(shortcutString)
+        // Don't save, just show the warning
+        return
+      } else {
+        // Clear any previous conflict warning
+        setShortcutConflict(null)
+      }
+      
+      // Update the input value
+      setEditingShortcutValue(shortcutString)
+      
+      // Save immediately if no conflict
+      if (!findShortcutConflict(shortcutString, action)) {
+        const newShortcuts = {
+          ...customShortcuts,
+          [action]: shortcutString
+        }
+        setCustomShortcuts(newShortcuts)
+        localStorage.setItem('customShortcuts', JSON.stringify(newShortcuts))
+      }
+    }
+  }
+
+  // Helper function to render shortcut display with hover-to-edit
+  const renderShortcutDisplay = (shortcut: { action: string, current: string }) => {
+    const isEditing = editingShortcut === shortcut.action
+    const currentValue = isEditing ? editingShortcutValue : getShortcutValue(shortcut.action, shortcut.current)
+    
+    return (
+      <div className="relative group">
+        <kbd 
+          className={`px-2 py-1 text-[10px] rounded cursor-pointer transition-colors ${
+            isEditing 
+              ? "bg-blue-100 dark:bg-blue-900 border border-blue-500 opacity-0" 
+              : "bg-gray-200 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 hover:border hover:border-blue-500"
+          }`}
+          title="Click or hover to edit"
+          onClick={() => {
+            startEditingShortcut(shortcut.action, getShortcutValue(shortcut.action, shortcut.current))
+          }}
+        >
+          {getShortcutValue(shortcut.action, shortcut.current)}
+        </kbd>
+        <input
+          type="text"
+          className={`absolute inset-0 px-2 py-1 text-[10px] bg-blue-100 dark:bg-blue-900 border border-blue-500 rounded transition-opacity duration-200 ${
+            isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+          value={currentValue}
+          onChange={(e) => setEditingShortcutValue(e.target.value)}
+          onKeyDown={(e) => handleShortcutKeyDown(e, shortcut.action)}
+          onBlur={() => saveShortcut(shortcut.action)}
+          onMouseEnter={(e) => {
+            e.currentTarget.focus()
+            startEditingShortcut(shortcut.action, getShortcutValue(shortcut.action, shortcut.current))
+          }}
+          onClick={() => {
+            startEditingShortcut(shortcut.action, getShortcutValue(shortcut.action, shortcut.current))
+          }}
+        />
+      </div>
+    )
+  }
+
   return (
-    <div className={`min-h-screen ${isDarkMode ? "dark" : ""}`}>
+    <div 
+      className={`min-h-screen ${isDarkMode ? "dark" : ""}`}
+      onKeyDown={handleGlobalKeyDown}
+      tabIndex={-1}
+    >
       <div className="min-h-screen bg-gray-50 dark:bg-[#2d2d30] text-gray-900 dark:text-[#ececf1] flex">
         {/* Collapsed Sidebar Toggle - Fixed to absolute far left */}
         {sidebarCollapsed && (
@@ -1359,29 +2157,79 @@ export default function MornGPTHomepage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowDownloadSection(!showDownloadSection)}
-                className="w-10 h-10 rounded-lg text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                className="w-6 h-6 rounded-sm text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
                 title="Download Apps"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3 h-3" />
               </Button>
             </div>
             
-            {/* Ads Toggle (only for non-pro users) */}
-            {appUser && !appUser.isPro && (
-              <div className="px-1 pb-2">
+            {/* Ads Toggle (for all users) */}
+            {appUser && (
+              <div className="flex justify-center px-1 pb-1 pt-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setAdsEnabled(!adsEnabled)}
-                  className={`w-10 h-10 rounded-lg ${
-                    adsEnabled 
+                  onClick={() => updateUserSettings({ adsEnabled: !(appUser?.settings?.adsEnabled ?? false) })}
+                  className={`w-6 h-6 rounded-sm ${
+                    (appUser?.settings?.adsEnabled ?? false)
                       ? "text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]" 
                       : "text-gray-400 dark:text-gray-500"
                   }`}
-                  title={adsEnabled ? "Hide Ads" : "Show Ads"}
+                  title={(appUser?.settings?.adsEnabled ?? false) ? "Hide Ads" : "Show Ads"}
                 >
-                  {adsEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </Button>
+                  {(appUser?.settings?.adsEnabled ?? false) ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                </Button>
+              </div>
+            )}
+
+            {/* Specialized Products (when ads are disabled) */}
+            {!(appUser?.settings?.adsEnabled ?? false) && (
+              <div className="flex flex-col items-center space-y-0.5 px-1">
+                <ScrollArea className="w-full max-h-[calc(100vh-120px)]">
+                  <div className="grid grid-cols-1 gap-0.5 w-full pb-4 justify-items-center pt-1">
+                    {specializedProducts.map((product) => (
+                      <Popover key={product.id}>
+                        <PopoverTrigger asChild>
+                          <button
+                            className="w-7 h-7 rounded-sm border border-gray-200 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] transition-colors flex items-center justify-center group focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            onMouseEnter={(e) => e.currentTarget.focus()}
+                          >
+                            <span className="text-[10px]">{product.icon}</span>
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent 
+                          side="right" 
+                          align="center"
+                          className="w-56 p-3 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] shadow-lg cursor-pointer z-50"
+                          onClick={() => handleSpecializedProductSelect(product)}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg">{product.icon}</span>
+                              <div>
+                                <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-sm">{product.name}</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{product.description}</p>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              Powered by {product.model}
+                            </div>
+                            {product.url && (
+                              <button
+                                onClick={() => handleSpecializedProductSelect(product)}
+                                className="w-full text-left text-xs text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 cursor-pointer"
+                              >
+                                Click to visit: {product.url.replace('https://', '')}
+                              </button>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </div>
@@ -1395,7 +2243,7 @@ export default function MornGPTHomepage() {
         >
           {!sidebarCollapsed && (
             <>
-              <div className="p-4 border-b border-gray-200 dark:border-[#565869] space-y-3">
+              <div className="p-3 border-b border-gray-200 dark:border-[#565869] space-y-2">
                 <div className="flex items-center justify-between">
                   <Button
                     onClick={() => createNewChat()}
@@ -1425,8 +2273,10 @@ export default function MornGPTHomepage() {
 
               </div>
 
-              <ScrollArea className="flex-1 max-h-[calc(100vh-200px)]" ref={sidebarScrollRef}>
+              <ScrollArea className="flex-1 max-h-[calc(100vh-180px)]" ref={sidebarScrollRef}>
                 <div className="p-2">
+
+
                   {/* General Folder */}
                   <div className="mb-1">
                     <ContextMenu>
@@ -1921,7 +2771,9 @@ export default function MornGPTHomepage() {
                     className="min-h-10 max-h-32 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
                     disabled={!appUser}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      const currentHotkey = appUser?.settings?.sendHotkey || "enter"
+                      if (checkHotkeyMatch(e, currentHotkey)) {
+                        e.preventDefault()
                         handleSubmit()
                       }
                     }}
@@ -2284,7 +3136,7 @@ export default function MornGPTHomepage() {
                               <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-500 dark:text-gray-400" />
                               <h3 className="font-medium text-gray-900 dark:text-[#ececf1] mb-1">General Model</h3>
                               <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Multi-purpose AI assistant for general conversations and tasks
+                                Auto select AI assistant for general conversations
                               </p>
                             </div>
                           </TabsContent>
@@ -2328,83 +3180,67 @@ export default function MornGPTHomepage() {
                           </TabsContent>
 
                           <TabsContent value="external" className="p-2">
-                            <div className="space-y-2">
-                              <div>
-                                <h4 className="text-[10px] font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></span>
-                                  Free Models
-                                </h4>
-                                <div className="grid grid-cols-3 gap-1">
-                                  {externalModels
-                                    .filter((model) => model.type === "free")
-                                    .map((model, index) => (
-                                      <div
-                                        key={index}
-                                        className={`p-1.5 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-[#565869] border ${
-                                          selectedModel === model.name
-                                            ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
-                                            : "border-gray-200 dark:border-[#565869]"
-                                        }`}
-                                        onClick={() => handleModelChange("external", undefined, model.name)}
-                                      >
-                                        <div className="flex items-center justify-between mb-0.5">
-                                          <p className="text-[10px] font-medium truncate text-gray-900 dark:text-[#ececf1]">
-                                            {model.name}
-                                          </p>
-                                          <Badge className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 text-[8px] px-0.5 py-0 h-3">
-                                            F
-                                          </Badge>
-                                        </div>
-                                        <p className="text-[8px] text-gray-500 dark:text-gray-400 mb-0.5 truncate">
-                                          by {model.provider}
-                                        </p>
-                                        <p className="text-[8px] text-gray-600 dark:text-gray-300 line-clamp-1">
-                                          {model.description}
-                                        </p>
+                            <div className="grid grid-cols-3 gap-1">
+                              {externalModels.map((model, index) => {
+                                                const isPaidModel = model.type !== "free"
+                const canAccess = !isPaidModel || (appUser && appUser.isPaid)
+                                
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`p-1.5 rounded border ${
+                                      canAccess 
+                                        ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-[#565869]" 
+                                        : "cursor-not-allowed opacity-60"
+                                    } ${
+                                      selectedModel === model.name
+                                        ? model.type === "free"
+                                          ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
+                                          : "bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700"
+                                        : "border-gray-200 dark:border-[#565869]"
+                                    }`}
+                                    onClick={() => {
+                                      if (canAccess) {
+                                        handleModelChange("external", undefined, model.name)
+                                      } else {
+                                        // Show upgrade prompt for paid models
+                                        handleUpgradeClick(pricingPlans[1]) // Pro plan
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <p className="text-[10px] font-medium truncate text-gray-900 dark:text-[#ececf1]">
+                                        {model.name}
+                                      </p>
+                                      <div className="flex items-center space-x-1">
+                                        {!canAccess && isPaidModel && (
+                                          <Lock className="w-2.5 h-2.5 text-gray-400" />
+                                        )}
+                                        <Badge className={`text-[8px] px-0.5 py-0 h-3 ${
+                                          model.type === "free"
+                                            ? "bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100"
+                                            : "bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100"
+                                        }`}>
+                                          {model.type === "free" ? "F" : "$"}
+                                        </Badge>
                                       </div>
-                                    ))}
-                                </div>
-                              </div>
-
-                              <div>
-                                <h4 className="text-[10px] font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-1"></span>
-                                  Popular Models
-                                </h4>
-                                <div className="grid grid-cols-3 gap-1">
-                                  {externalModels
-                                    .filter((model) => model.type === "popular")
-                                    .map((model, index) => (
-                                      <div
-                                        key={index}
-                                        className={`p-1.5 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-[#565869] border ${
-                                          selectedModel === model.name
-                                            ? "bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700"
-                                            : "border-gray-200 dark:border-[#565869]"
-                                        }`}
-                                        onClick={() => handleModelChange("external", undefined, model.name)}
-                                      >
-                                        <div className="flex items-center justify-between mb-0.5">
-                                          <p className="text-[10px] font-medium truncate text-gray-900 dark:text-[#ececf1]">
-                                            {model.name}
-                                          </p>
-                                          <Badge className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 text-[8px] px-0.5 py-0 h-3">
-                                            P
-                                          </Badge>
-                                        </div>
-                                        <p className="text-[8px] text-gray-500 dark:text-gray-400 mb-0.5 truncate">
-                                          by {model.provider}
-                                        </p>
-                                        <p className="text-[8px] text-purple-600 dark:text-purple-400 mb-0.5 truncate">
-                                          {model.price}
-                                        </p>
-                                        <p className="text-[8px] text-gray-600 dark:text-gray-300 line-clamp-1">
-                                          {model.description}
-                                        </p>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
+                                    </div>
+                                    {model.type !== "free" && (
+                                      <p className="text-[8px] text-purple-600 dark:text-purple-400 mb-0.5 truncate">
+                                        {model.price}
+                                      </p>
+                                    )}
+                                    <p className="text-[8px] text-gray-600 dark:text-gray-300 line-clamp-1">
+                                      {model.description}
+                                    </p>
+                                    {!canAccess && isPaidModel && (
+                                      <p className="text-[8px] text-red-500 dark:text-red-400 mt-0.5">
+                                        Paid required
+                                      </p>
+                                    )}
+                                  </div>
+                                )
+                              })}
                             </div>
                           </TabsContent>
                         </Tabs>
@@ -2738,7 +3574,12 @@ export default function MornGPTHomepage() {
                       <span className="text-sm text-gray-900 dark:text-[#ececf1]">{appUser?.email}</span>
                       <div className="w-4 h-4 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
                         <span className="text-sm font-bold text-gray-600 dark:text-gray-300">
-                          {appUser?.isPro ? "P" : "F"}
+                          {appUser?.isPaid 
+                            ? (currentPlan === "Basic" ? "B" : 
+                               currentPlan === "Pro" ? "P" : 
+                               currentPlan === "Enterprise" ? "E" : "$")
+                            : "F"
+                          }
                         </span>
                       </div>
                       <Button
@@ -2854,26 +3695,27 @@ export default function MornGPTHomepage() {
                     <Button
                       variant="outline"
                       size="sm"
-                          className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+                      className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+                      onClick={() => updateUserSettings({ adsEnabled: !(appUser?.settings?.adsEnabled ?? false) })}
                     >
-                          <span className="text-xs">Turn Off Ads</span>
+                          <span className="text-xs">{appUser?.settings?.adsEnabled ?? false ? "Turn Off Ads" : "Turn On Ads"}</span>
                     </Button>
                   </div>
                     )}
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label className="text-sm text-gray-700 dark:text-gray-300">Shortcut</Label>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Keyboard shortcuts & hotkeys</p>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Hotkeys</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Customize keyboard shortcuts</p>
                       </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
-                        onClick={() => setShowShortcutDialog(true)}
-                    >
-                        <span className="text-xs">Enabled</span>
-                    </Button>
+                        onClick={() => setShowShortcutsHelp(true)}
+                      >
+                        <span className="text-xs">{appUser?.settings?.shortcutsEnabled ?? true ? "Enabled" : "Disabled"}</span>
+                      </Button>
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
@@ -2920,6 +3762,217 @@ export default function MornGPTHomepage() {
                 </div>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Hotkeys Configuration Dialog */}
+        <Dialog open={showShortcutsHelp} onOpenChange={setShowShortcutsHelp}>
+                        <DialogContent className="sm:max-w-7xl max-h-[95vh] bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Keyboard className="w-4 h-4 text-blue-500" />
+                <span className="text-lg">Customize Hotkeys</span>
+              </DialogTitle>
+              <DialogDescription className="text-sm text-gray-600 dark:text-gray-400">
+                Configure your keyboard shortcuts for maximum productivity. Use Cmd on Mac, Ctrl on Windows/Linux.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 overflow-y-auto max-h-[80vh]">
+              {/* Global Settings */}
+              <div className="p-3 bg-gray-50 dark:bg-[#565869] rounded-lg border border-gray-200 dark:border-[#565869]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500">
+                      <Settings className="w-3 h-3 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-[#ececf1]">Global Settings</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Manage shortcuts and preferences</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer h-7" onClick={() => showResetConfirmation(
+                      'Reset All Hotkeys',
+                      'Are you sure you want to reset ALL hotkeys to their default values? This action cannot be undone.',
+                      resetToDefaults
+                    )}>
+                      <RefreshCw className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Reset All</span>
+                    </div>
+                    <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer h-7" onClick={importHotkeys}>
+                      <Upload className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Import</span>
+                    </div>
+                    <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer h-7" onClick={exportHotkeys}>
+                      <Download className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Export</span>
+                    </div>
+                    <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-600 h-7">
+                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-500">
+                        {(appUser?.settings?.shortcutsEnabled ?? true) ? (
+                          <Keyboard className="w-3 h-3 text-white" />
+                        ) : (
+                          <X className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {(appUser?.settings?.shortcutsEnabled ?? true) ? 'Shortcuts Active' : 'Shortcuts Disabled'}
+                        </span>
+                      </div>
+                      <Switch 
+                        checked={appUser?.settings?.shortcutsEnabled ?? true}
+                        onCheckedChange={(checked) => updateUserSettings({ shortcutsEnabled: checked })}
+                        className="data-[state=checked]:bg-gray-600 data-[state=unchecked]:bg-gray-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conflict Warning */}
+              {shortcutConflict && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <div>
+                      <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                        Shortcut Conflict Detected!
+                      </p>
+                      <p className="text-xs text-red-600 dark:text-red-300">
+                        "{shortcutConflict.shortcut}" is already used by "{shortcutConflict.conflictingAction}". 
+                        Please choose a different shortcut.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
+
+                                              {/* Navigation & Interface Controls */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-[#ececf1] flex items-center">
+                  <Navigation className="w-3 h-3 mr-1" />
+                  Navigation & Interface Controls
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => showResetConfirmation(
+                      'Reset Navigation Shortcuts',
+                      'Are you sure you want to reset all Navigation & Interface Controls shortcuts to their default values? This action cannot be undone.',
+                      resetNavigationShortcuts
+                    )}
+                    className="text-xs px-2 py-1 h-6 ml-2"
+                  >
+                    Reset
+                  </Button>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  {[
+                    { action: "New Chat", current: "Ctrl/Cmd + K", description: "Create a new conversation" },
+                    { action: "Search Chats", current: "Ctrl/Cmd + F", description: "Focus the search bar" },
+                    { action: "Toggle Sidebar", current: "Ctrl/Cmd + B", description: "Show/hide the sidebar" },
+                    { action: "Settings", current: "Ctrl/Cmd + S", description: "Open settings dialog" },
+                    { action: "Toggle Theme", current: "Ctrl/Cmd + D", description: "Switch light/dark mode" },
+                    { action: "Ask GPT", current: "Ctrl/Cmd + G", description: "Open Ask GPT dialog" },
+                    { action: "Downloads", current: "Ctrl/Cmd + L", description: "Open download section" },
+                    { action: "Hotkeys Menu", current: "Ctrl/Cmd + H", description: "Open hotkeys configuration" },
+                                         { action: "Open Billing", current: "Ctrl/Cmd + Q", description: "Open billing management" },
+                    { action: "Open Privacy", current: "Ctrl/Cmd + Y", description: "Open privacy settings" },
+                                          { action: "Close Dialogs", current: "Ctrl/Cmd + I", description: "Close any open dialog" }
+                  ].map((shortcut) => (
+                    <div key={shortcut.action} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                      <div>
+                        <span className="text-xs font-medium text-gray-900 dark:text-[#ececf1]">{shortcut.action}</span>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{shortcut.description}</p>
+                      </div>
+                      {renderShortcutDisplay(shortcut)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Model Shortcuts */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-[#ececf1] flex items-center">
+                  <Bot className="w-3 h-3 mr-1" />
+                  AI Model Shortcuts
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => showResetConfirmation(
+                      'Reset AI Model Shortcuts',
+                      'Are you sure you want to reset all AI Model shortcuts to their default values? This action cannot be undone.',
+                      resetAIModelShortcuts
+                    )}
+                    className="text-xs px-2 py-1 h-6 ml-2"
+                  >
+                    Reset
+                  </Button>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  {[
+                    { action: "Deep Thinking", current: "Ctrl/Cmd + 1", description: "Activate deep thinking mode" },
+                    { action: "Creative Ideas", current: "Ctrl/Cmd + 2", description: "Generate creative ideas" },
+                    { action: "Analyze", current: "Ctrl/Cmd + 3", description: "Provide detailed analysis" },
+                    { action: "Problem Solve", current: "Ctrl/Cmd + 4", description: "Step-by-step problem solving" }
+                  ].map((shortcut) => (
+                    <div key={shortcut.action} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                      <div>
+                        <span className="text-xs font-medium text-gray-900 dark:text-[#ececf1]">{shortcut.action}</span>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{shortcut.description}</p>
+                      </div>
+                      {renderShortcutDisplay(shortcut)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prompts Management */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-[#ececf1] flex items-center">
+                  <MessageSquare className="w-3 h-3 mr-1" />
+                  Prompts Management
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => showResetConfirmation(
+                      'Reset Prompts Management',
+                      'Are you sure you want to reset all Prompts Management shortcuts to their default values? This action cannot be undone.',
+                      resetPromptsShortcuts
+                    )}
+                    className="text-xs px-2 py-1 h-6 ml-2"
+                  >
+                    Reset
+                  </Button>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  {[
+                    { action: "Send Prompt", current: "Enter", description: "Send prompt with Enter key" },
+                    { action: "Jump to Last", current: "Ctrl/Cmd + J", description: "Scroll to latest prompt" },
+                    { action: "Jump to Top", current: "Ctrl/Cmd + T", description: "Scroll to chat beginning" },
+                    { action: "Upload Files", current: "Ctrl/Cmd + U", description: "Open file upload dialog" },
+                    { action: "Prompt History", current: "Ctrl/Cmd + P", description: "Open recent prompts" }
+                  ].map((shortcut) => (
+                    <div key={shortcut.action} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                      <div>
+                        <span className="text-xs font-medium text-gray-900 dark:text-[#ececf1]">{shortcut.action}</span>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{shortcut.description}</p>
+                      </div>
+                      {renderShortcutDisplay(shortcut)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+
+
+
+            </div>
+
+
           </DialogContent>
         </Dialog>
 
@@ -3463,28 +4516,41 @@ export default function MornGPTHomepage() {
                         </div>
                         </div>
 
-                {/* Activity Log */}
-                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                {/* Import Data */}
+                <div className={`bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow ${!appUser?.isPaid ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center shadow-sm">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        </div>
+                                            <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-sm">
+                        <Download className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Import Data</p>
+                        {!appUser?.isPaid && <Lock className="w-3 h-3 text-gray-400" />}
+                      </div>
                       <div>
-                        <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Activity Log</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          View your account activity
+                          {appUser?.isPaid ? "Import your data from other platforms" : "Paid feature - Upgrade to import data"}
                         </p>
                     </div>
                           </div>
                         <Button
                       size="sm"
                           variant="outline"
-                      className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
+                          onClick={() => {
+                            if (!appUser?.isPaid) {
+                              setShowPrivacyDialog(false)
+                              setShowBillingDialog(true)
+                            } else {
+                              // Handle import data functionality for paid users
+                              console.log("Import data clicked")
+                            }
+                          }}
+                      className={`${appUser?.isPaid 
+                        ? 'bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 cursor-not-allowed'
+                      } shadow-sm text-xs`}
                         >
-                      View
+                      {appUser?.isPaid ? "Import" : "Paid Only"}
                         </Button>
                         </div>
                       </div>
@@ -3549,7 +4615,7 @@ export default function MornGPTHomepage() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900 dark:text-[#ececf1]">
-                          {appUser?.isPro ? "Upgrade Your Plan" : "Upgrade to Pro"}
+                          {appUser?.isPro ? "Upgrade Your Plan" : "Upgrade"}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           {appUser?.isPro ? "Explore higher tier plans" : "Unlock premium features and remove ads"}
@@ -3565,57 +4631,12 @@ export default function MornGPTHomepage() {
                       className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                     >
                       <Crown className="w-4 h-4 mr-2" />
-                      {appUser?.isPro ? "Upgrade Plan" : "Upgrade to Pro"}
+                      {appUser?.isPro ? "Upgrade Plan" : "Upgrade"}
                     </Button>
                   </div>
                 </div>
 
-                {/* Upgrade Section (for non-Pro users) */}
-                {!appUser?.isPro && (
-                  <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
-                          <Crown className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-[#ececf1]">Upgrade to Pro</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Unlock premium features and remove ads
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setShowBillingDialog(false)
-                          setShowUpgradeDialog(true)
-                        }}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                      >
-                        Upgrade Now
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center space-x-1">
-                        <Check className="w-3 h-3 text-green-500" />
-                        <span>No ads</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Check className="w-3 h-3 text-green-500" />
-                        <span>Priority support</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Check className="w-3 h-3 text-green-500" />
-                        <span>Advanced models</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Check className="w-3 h-3 text-green-500" />
-                        <span>Unlimited chats</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* Payment Method */}
                 <div className="p-3 bg-gray-50 dark:bg-[#40414f] rounded-lg">
@@ -4464,21 +5485,21 @@ export default function MornGPTHomepage() {
                 </div>
               </div>
 
-              {/* Ads Section (only for non-pro users) */}
-              {appUser && !appUser.isPro && (
+              {/* Ads Section (for all users) */}
+              {appUser && (
                 <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-[#565869]">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Advertisement</h3>
                     <Switch 
-                      checked={adsEnabled} 
-                      onCheckedChange={setAdsEnabled}
+                      checked={appUser?.settings?.adsEnabled ?? false} 
+                      onCheckedChange={(checked) => updateUserSettings({ adsEnabled: checked })}
                     />
                   </div>
-                  {adsEnabled && (
+                  {(appUser?.settings?.adsEnabled ?? false) && !appUser.isPro && (
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                       <div className="flex items-center space-x-2 mb-2">
                         <Crown className="w-4 h-4 text-yellow-600" />
-                        <span className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Upgrade to Pro</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Upgrade</span>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                         Remove ads and unlock premium features
@@ -4500,6 +5521,40 @@ export default function MornGPTHomepage() {
                   Close
                 </Button>
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reset Confirmation Dialog */}
+        <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                <span className="text-lg">{resetConfirmData?.title}</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                {resetConfirmData?.message}
+              </p>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={handleResetCancel}
+                className="flex-1 border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Reset
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
