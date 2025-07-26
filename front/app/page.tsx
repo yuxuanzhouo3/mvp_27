@@ -3375,30 +3375,7 @@ export default function MornGPTHomepage() {
 
                             </div>
                             
-                            {/* Account Restoration Support */}
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                              <div className="flex items-start space-x-2">
-                                <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-                                <div>
-                                  <h5 className="font-medium text-blue-900 dark:text-blue-100 text-xs mb-1">Restore Account Button Disabled</h5>
-                                  <p className="text-xs text-blue-700 dark:text-blue-300 leading-tight mb-2">
-                                    The "Restore Account" button above is disabled for security. To restore your account within 90 days, please contact our support team first.
-                                  </p>
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Email:</span>
-                                    <a 
-                                      href="mailto:support@morngpt.com" 
-                                      className="text-xs text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-200"
-                                    >
-                                      support@morngpt.com
-                                    </a>
-                                  </div>
-                                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                    Include your email address and deletion date. Support will enable the restore button after verification.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
+
                       </div>
                       
                       {/* Additional security information */}
