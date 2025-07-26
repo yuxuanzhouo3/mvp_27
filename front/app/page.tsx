@@ -3047,7 +3047,7 @@ export default function MornGPTHomepage() {
 
         {/* Combined Profile & Settings Dialog */}
         <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-          <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] flex flex-col">
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
                 <User className="w-5 h-5" />
@@ -3071,20 +3071,31 @@ export default function MornGPTHomepage() {
 
                   <TabsContent value="profile" className="space-y-6">
                     {/* Profile Header */}
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
-                      <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-                        <User className="w-8 h-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{appUser?.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{appUser?.email}</p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          {appUser?.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {appUser?.isPro ? "Pro Member" : "Free User"}
-                          </span>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                          <User className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{appUser?.name}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{appUser?.email}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            {appUser?.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {appUser?.isPro ? "Pro Member" : "Free User"}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      {!appUser?.isPro && (
+                        <Button
+                          onClick={() => setShowUpgradeDialog(true)}
+                          className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white border-0 shadow-lg"
+                        >
+                          <Crown className="w-4 h-4 mr-2" />
+                          Upgrade to Pro
+                        </Button>
+                      )}
                     </div>
 
                     {/* Profile Form */}
@@ -3313,31 +3324,7 @@ export default function MornGPTHomepage() {
                       </div>
                     </div>
 
-                    {/* Payment Methods */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-base">Payment Methods</h4>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="text-gray-900 dark:text-[#ececf1] text-base font-normal">Auto Renewal</Label>
-                            <p className="text-base text-gray-500 dark:text-gray-400">Automatically renew your subscription</p>
-                          </div>
-                          <Switch
-                            checked={appUser?.settings?.autoSave || false}
-                            onCheckedChange={(checked) => updateUserSettings({ autoSave: checked })}
-                          />
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowPaymentMethodsDialog(true)}
-                          className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Manage Payment Methods
-                        </Button>
-                      </div>
-                    </div>
+
 
                                           {/* Enhanced Delete Account */}
                       <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 space-y-3">
