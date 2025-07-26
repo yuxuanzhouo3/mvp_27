@@ -368,6 +368,7 @@ export default function MornGPTHomepage() {
   const [showLogoutConfirmDialog, setShowLogoutConfirmDialog] = useState(false)
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [showEnhancedDeleteDialog, setShowEnhancedDeleteDialog] = useState(false)
+  const [showPaymentMethodsDialog, setShowPaymentMethodsDialog] = useState(false)
   const [deleteAccountStep, setDeleteAccountStep] = useState<"warning" | "confirmation" | "2fa" | "final">("warning")
   const [deleteConfirmationPhrase, setDeleteConfirmationPhrase] = useState("")
   const [userConfirmationInput, setUserConfirmationInput] = useState("")
@@ -3312,31 +3313,43 @@ export default function MornGPTHomepage() {
                       </div>
                     </div>
 
-                    {/* Data Settings */}
-
+                    {/* Payment Methods */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-base">Payment Methods</h4>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label className="text-gray-900 dark:text-[#ececf1] text-base font-normal">Auto Renewal</Label>
+                            <p className="text-base text-gray-500 dark:text-gray-400">Automatically renew your subscription</p>
+                          </div>
+                          <Switch
+                            checked={appUser?.settings?.autoSave || false}
+                            onCheckedChange={(checked) => updateUserSettings({ autoSave: checked })}
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowPaymentMethodsDialog(true)}
+                          className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Manage Payment Methods
+                        </Button>
+                      </div>
+                    </div>
 
                                           {/* Enhanced Delete Account */}
-                      <div className="space-y-3">
+                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-base">Account Security</h4>
+                            <h4 className="font-medium text-red-900 dark:text-red-100 text-base">Account Security</h4>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setAccountSecurityExpanded(!accountSecurityExpanded)}
-                            className="p-1 h-6 w-6 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                          >
-                            {accountSecurityExpanded ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </Button>
+
                         </div>
-                        <div className="border-t border-gray-200 dark:border-[#565869] pt-3">
+                        <div className="border-t border-red-200 dark:border-red-700 pt-3">
                           <div className="space-y-2">
-                            <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                            <div>
 
                               <div className="flex space-x-2">
                                 <Button
