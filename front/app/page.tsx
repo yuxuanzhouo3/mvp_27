@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
@@ -91,6 +91,8 @@ import {
   VolumeX,
   Save,
   AlertTriangle,
+  RefreshCw,
+  Receipt,
 } from "lucide-react"
 
 const mornGPTCategories = [
@@ -265,11 +267,6 @@ interface AppUser {
   name: string
   isPro: boolean
   avatar?: string
-  phone?: string
-  bio?: string
-  location?: string
-  website?: string
-  timezone?: string
   settings?: {
     theme: "light" | "dark" | "auto"
     language: string
@@ -348,7 +345,17 @@ export default function MornGPTHomepage() {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const [showBillingDialog, setShowBillingDialog] = useState(false)
+  const [showPaymentEditDialog, setShowPaymentEditDialog] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<(typeof pricingPlans)[0] | null>(null)
+  const [autoRenewEnabled, setAutoRenewEnabled] = useState(true)
+  const [nextBillingDate, setNextBillingDate] = useState("2024-12-25")
+  const [paymentMethod, setPaymentMethod] = useState({
+    type: "card",
+    last4: "4242",
+    brand: "Visa",
+    expiry: "12/25"
+  })
   const [authMode, setAuthMode] = useState<"login" | "signup" | "reset">("login")
   const [authForm, setAuthForm] = useState({ email: "", password: "", name: "" })
   const [showPassword, setShowPassword] = useState(false)
@@ -364,33 +371,15 @@ export default function MornGPTHomepage() {
   const [editingBookmarkName, setEditingBookmarkName] = useState<string>("")
   
   // Enhanced user profile state
-  const [showProfileDialog, setShowProfileDialog] = useState(false)
+
   const [showLogoutConfirmDialog, setShowLogoutConfirmDialog] = useState(false)
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
-  const [showEnhancedDeleteDialog, setShowEnhancedDeleteDialog] = useState(false)
-  const [showPaymentMethodsDialog, setShowPaymentMethodsDialog] = useState(false)
-  const [deleteAccountStep, setDeleteAccountStep] = useState<"warning" | "confirmation" | "2fa" | "final">("warning")
-  const [deleteConfirmationPhrase, setDeleteConfirmationPhrase] = useState("")
-  const [userConfirmationInput, setUserConfirmationInput] = useState("")
-  const [twoFACode, setTwoFACode] = useState("")
-  const [generatedTwoFACode, setGeneratedTwoFACode] = useState("")
-  const [accountDeletionDate, setAccountDeletionDate] = useState<Date | null>(null)
-  const [userProfileForm, setUserProfileForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    bio: "",
-    location: "",
-    website: "",
-    timezone: "UTC",
-    language: "en",
-  })
+  const [showPrivacyDialog, setShowPrivacyDialog] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [profileSaveStatus, setProfileSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle")
-  
-  // Combined settings state
-  const [activeSettingsTab, setActiveSettingsTab] = useState("profile")
-  const [accountSecurityExpanded, setAccountSecurityExpanded] = useState(false)
+  const [userProfileForm, setUserProfileForm] = useState({
+    name: ""
+  })
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -413,26 +402,22 @@ export default function MornGPTHomepage() {
     const savedTheme = localStorage.getItem("morngpt_theme")
 
     if (savedUser) {
-      const user = JSON.parse(savedUser)
-      setAppUser(user)
+      setAppUser(JSON.parse(savedUser))
       // Load user's chat sessions
-      const savedChats = localStorage.getItem(`morngpt_chats_${user.id}`)
+      const savedChats = localStorage.getItem(`morngpt_chats_${JSON.parse(savedUser).id}`)
       if (savedChats) {
         setChatSessions(JSON.parse(savedChats))
       }
       // Load bookmarked messages
-      const savedBookmarks = localStorage.getItem(`morngpt_bookmarks_${user.id}`)
+      const savedBookmarks = localStorage.getItem(`morngpt_bookmarks_${JSON.parse(savedUser).id}`)
       if (savedBookmarks) {
         setBookmarkedMessages(JSON.parse(savedBookmarks))
       }
-      
-      // Apply user's saved theme preference
-      if (user.settings?.theme) {
-        applyTheme(user.settings.theme)
-      }
-    } else if (savedTheme) {
-      // Fallback to legacy theme setting
-      applyTheme(savedTheme as "light" | "dark" | "auto")
+    }
+
+    if (savedTheme === "dark") {
+      setIsDarkMode(true)
+      document.documentElement.classList.add("dark")
     }
   }, [])
 
@@ -779,103 +764,14 @@ export default function MornGPTHomepage() {
     if (appUser) {
       const updatedUser = {
         ...appUser,
-        settings: { 
-          theme: "auto" as const,
-          language: "en",
-          notifications: false,
-          soundEnabled: false,
-          autoSave: false,
-          ...appUser.settings, 
-          ...newSettings 
-        },
+        settings: { ...appUser.settings, ...newSettings },
       }
       setAppUser(updatedUser)
       localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
-      
-      // Apply theme changes immediately
-      if (newSettings?.theme) {
-        applyTheme(newSettings.theme)
-      }
     }
   }
 
-  // Enhanced theme application function
-  const applyTheme = (theme: "light" | "dark" | "auto") => {
-    let isDark = false
-    
-    if (theme === "auto") {
-      // Check system preference
-      isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    } else {
-      isDark = theme === "dark"
-    }
-    
-    setIsDarkMode(isDark)
-    localStorage.setItem("morngpt_theme", theme)
-    
-    if (isDark) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }
 
-  // Enhanced user profile functions
-  const openProfileDialog = () => {
-    if (appUser) {
-      setUserProfileForm({
-        name: appUser.name,
-        email: appUser.email,
-        phone: appUser.phone || "",
-        bio: appUser.bio || "",
-        location: appUser.location || "",
-        website: appUser.website || "",
-        timezone: appUser.timezone || "UTC",
-        language: appUser.settings?.language || "en",
-      })
-      setShowProfileDialog(true)
-    }
-  }
-
-  const saveUserProfile = async () => {
-    if (!appUser) return
-    
-    setProfileSaveStatus("saving")
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const updatedUser = {
-        ...appUser,
-        name: userProfileForm.name,
-        email: userProfileForm.email,
-        phone: userProfileForm.phone,
-        bio: userProfileForm.bio,
-        location: userProfileForm.location,
-        website: userProfileForm.website,
-        timezone: userProfileForm.timezone,
-        settings: {
-          theme: "auto" as const,
-          language: userProfileForm.language,
-          notifications: false,
-          soundEnabled: false,
-          autoSave: false,
-          ...appUser.settings,
-        },
-      }
-      
-      setAppUser(updatedUser)
-      localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
-      setProfileSaveStatus("success")
-      setIsEditingProfile(false)
-      
-      setTimeout(() => setProfileSaveStatus("idle"), 2000)
-    } catch (error) {
-      setProfileSaveStatus("error")
-      setTimeout(() => setProfileSaveStatus("idle"), 3000)
-    }
-  }
 
   const confirmLogout = () => {
     console.log("confirmLogout called") // Debug log
@@ -887,98 +783,65 @@ export default function MornGPTHomepage() {
   }
 
   const deleteUserAccount = () => {
-    if (appUser) {
-      // Clear all user data
-      localStorage.removeItem("morngpt_user")
-      localStorage.removeItem(`morngpt_chats_${appUser.id}`)
-      localStorage.removeItem(`morngpt_bookmarks_${appUser.id}`)
-      localStorage.removeItem("morngpt_theme")
-      
-      // Store account for 90-day restoration period
-      const deletionDate = new Date()
-      const restorationData = {
-        user: appUser,
-        chats: chatSessions,
-        bookmarks: bookmarkedMessages,
-        deletionDate: deletionDate.toISOString(),
-        restorationDeadline: new Date(deletionDate.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString()
+    // Clear all user data
+    localStorage.clear()
+    setAppUser(null)
+    setShowDeleteAccountDialog(false)
+    
+    // Reset to default state
+    setChatSessions([
+      {
+        id: "1",
+        title: "Welcome to MornGPT",
+        messages: [],
+        model: "General",
+        modelType: "general",
+        category: "general",
+        lastUpdated: new Date(),
+        isModelLocked: false,
+      },
+    ])
+    setCurrentChatId("1")
+    setMessages([])
+    setPromptHistory([])
+    setBookmarkedMessages([])
+    
+    alert("Account deleted successfully")
+  }
+
+  const startEditingProfile = () => {
+    if (!appUser) return
+    setUserProfileForm({
+      name: appUser.name
+    })
+    setIsEditingProfile(true)
+  }
+
+  const saveUserProfile = async () => {
+    if (!appUser) return
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      const updatedUser = {
+        ...appUser,
+        name: userProfileForm.name
       }
-      localStorage.setItem(`morngpt_deleted_account_${appUser.id}`, JSON.stringify(restorationData))
-      
-      setAppUser(null)
-      setChatSessions([])
-      setBookmarkedMessages([])
-      setShowDeleteAccountDialog(false)
-      setShowEnhancedDeleteDialog(false)
-      setDeleteAccountStep("warning")
-      setDeleteConfirmationPhrase("")
-      setUserConfirmationInput("")
-      setTwoFACode("")
-      setGeneratedTwoFACode("")
-      setAccountDeletionDate(null)
+
+      setAppUser(updatedUser)
+      localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
+      setIsEditingProfile(false)
+    } catch (error) {
+      console.error("Failed to save profile:", error)
     }
   }
 
-  const startEnhancedDeleteAccount = () => {
-    // Generate random confirmation phrase
-    const phrases = [
-      "DELETE MY ACCOUNT PERMANENTLY",
-      "I UNDERSTAND THIS IS IRREVERSIBLE",
-      "CONFIRM ACCOUNT DELETION NOW",
-      "PERMANENTLY REMOVE ALL DATA",
-      "FINAL CONFIRMATION TO DELETE"
-    ]
-    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)]
-    setDeleteConfirmationPhrase(randomPhrase)
-    setUserConfirmationInput("")
-    setDeleteAccountStep("warning")
-    setShowEnhancedDeleteDialog(true)
-  }
-
-  const generateTwoFACode = () => {
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
-    setGeneratedTwoFACode(code)
-    setTwoFACode("")
-    setDeleteAccountStep("2fa")
-    return code
-  }
-
-  const verifyDeleteAccount = () => {
-    if (userConfirmationInput.trim() === deleteConfirmationPhrase) {
-      const code = generateTwoFACode()
-      // In a real app, this would be sent via email/SMS
-      console.log("2FA Code for deletion:", code)
-    }
-  }
-
-  const confirmFinalDeletion = () => {
-    if (twoFACode === generatedTwoFACode) {
-      setDeleteAccountStep("final")
-      setAccountDeletionDate(new Date())
-    }
-  }
-
-  const restoreAccount = () => {
-    if (appUser) {
-      const restorationData = localStorage.getItem(`morngpt_deleted_account_${appUser.id}`)
-      if (restorationData) {
-        const data = JSON.parse(restorationData)
-        const deadline = new Date(data.restorationDeadline)
-        if (new Date() < deadline) {
-          // Restore account
-          setAppUser(data.user)
-          setChatSessions(data.chats)
-          setBookmarkedMessages(data.bookmarks)
-          localStorage.setItem("morngpt_user", JSON.stringify(data.user))
-          localStorage.setItem(`morngpt_chats_${data.user.id}`, JSON.stringify(data.chats))
-          localStorage.setItem(`morngpt_bookmarks_${data.user.id}`, JSON.stringify(data.bookmarks))
-          localStorage.removeItem(`morngpt_deleted_account_${appUser.id}`)
-          setShowEnhancedDeleteDialog(false)
-          setDeleteAccountStep("warning")
-          setAccountDeletionDate(null)
-        }
-      }
-    }
+  const cancelEditingProfile = () => {
+    setIsEditingProfile(false)
+    setUserProfileForm({
+      name: ""
+    })
   }
 
   const simulateMultiGPTResponse = async (userPrompt: string): Promise<Message> => {
@@ -1759,14 +1622,18 @@ export default function MornGPTHomepage() {
                         </PopoverTrigger>
                         <PopoverContent className="w-48 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] p-1">
                           <div className="space-y-1">
+
+                            {appUser && (
                             <Button
                               variant="ghost"
                               className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
-                              onClick={openProfileDialog}
+                                onClick={() => setShowSettingsDialog(true)}
                             >
-                              <User className="w-4 h-4 mr-2" />
-                              Profile & Settings
+                                <Settings className="w-4 h-4 mr-2" />
+                                Setting
                             </Button>
+                            )}
+
                             {!appUser.isPro && (
                               <Button
                                 variant="ghost"
@@ -2706,91 +2573,103 @@ export default function MornGPTHomepage() {
 
         {/* Settings Dialog */}
         <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-          <DialogContent className="sm:max-w-2xl bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
-                <Settings className="w-5 h-5" />
-                <span>Profile & Settings</span>
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6">
-              {/* Profile Section */}
-              <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
-                <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-gray-500 dark:text-gray-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{appUser?.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{appUser?.email}</p>
-                  {appUser?.isPro && (
-                    <Badge className="mt-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                      <Crown className="w-3 h-3 mr-1" />
-                      Pro User
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                >
-                  Edit Profile
-                </Button>
-              </div>
-
-              <Separator className="bg-gray-200 dark:bg-[#565869]" />
-
-              {/* Settings Sections */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Appearance */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 dark:text-[#ececf1] flex items-center">
-                    <PaletteIcon className="w-4 h-4 mr-2" />
-                    Appearance
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm text-gray-700 dark:text-gray-300">Dark Mode</Label>
-                      <Switch checked={isDarkMode} onCheckedChange={toggleTheme} />
+          <DialogContent className="sm:max-w-3xl max-h-[70vh] bg-gradient-to-br from-white to-gray-50 dark:from-[#40414f] dark:to-[#2d2d30] border-gray-200 dark:border-[#565869] shadow-2xl">
+                          <DialogHeader className="pb-4">
+              </DialogHeader>
+                          <div className="space-y-1 py-1">
+              {/* Username Section - Moved Up */}
+              {isEditingProfile && (
+                <div className="bg-white dark:bg-[#40414f] rounded-xl p-4 border border-gray-100 dark:border-[#565869] shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Username</Label>
+                      <Input
+                        id="name"
+                        value={userProfileForm.name}
+                        onChange={(e) => setUserProfileForm({...userProfileForm, name: e.target.value})}
+                        className="mt-1 bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter username"
+                      />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm text-gray-700 dark:text-gray-300">Language</Label>
-                      <Select defaultValue="en">
-                        <SelectTrigger className="w-24 h-8 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
-                          <span>EN</span>
-                        </SelectTrigger>
-                        <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
-                          <SelectItem value="en" className="text-gray-900 dark:text-[#ececf1]">
-                            English
-                          </SelectItem>
-                          <SelectItem value="es" className="text-gray-900 dark:text-[#ececf1]">
-                            Español
-                          </SelectItem>
-                          <SelectItem value="fr" className="text-gray-900 dark:text-[#ececf1]">
-                            Français
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex flex-col space-y-1 ml-4">
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                        onClick={saveUserProfile}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm"
+                        onClick={cancelEditingProfile}
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </div>
                 </div>
+              )}
 
-                {/* Notifications */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 dark:text-[#ececf1] flex items-center">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Notifications
+
+
+              {/* 5 Organized Settings Sections - 2 Column Layout - Compact */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* 1. Appearance & Notifications - Combined */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                  <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center mb-2 text-xs">
+                    <div className="p-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg mr-1.5">
+                      <PaletteIcon className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    Appearance & Notifications
                   </h4>
-                  <div className="space-y-3">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm text-gray-700 dark:text-gray-300">Push Notifications</Label>
+                      <Label className="text-xs text-gray-700 dark:text-gray-300">Account</Label>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-900 dark:text-[#ececf1]">{appUser?.email}</span>
+                        <div className="w-4 h-4 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                            {appUser?.isPro ? "P" : "F"}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-6 h-6 p-0 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
+                          onClick={() => setShowUpgradeDialog(true)}
+                        >
+                          <Crown className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-gray-700 dark:text-gray-300">Dark Mode</Label>
+                      <Switch checked={isDarkMode} onCheckedChange={toggleTheme} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-gray-700 dark:text-gray-300">Language</Label>
+                      <Select defaultValue="en">
+                        <SelectTrigger className="w-16 h-6 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                          <span className="text-xs">EN</span>
+                        </SelectTrigger>
+                        <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                          <SelectItem value="en" className="text-xs text-gray-900 dark:text-[#ececf1]">English</SelectItem>
+                          <SelectItem value="es" className="text-xs text-gray-900 dark:text-[#ececf1]">Español</SelectItem>
+                          <SelectItem value="fr" className="text-xs text-gray-900 dark:text-[#ececf1]">Français</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-gray-700 dark:text-gray-300">Push Notifications</Label>
                       <Switch
                         checked={appUser?.settings?.notifications}
                         onCheckedChange={(checked) => updateUserSettings({ notifications: checked })}
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm text-gray-700 dark:text-gray-300">Sound Effects</Label>
+                      <Label className="text-xs text-gray-700 dark:text-gray-300">Sound Effects</Label>
                       <Switch
                         checked={appUser?.settings?.soundEnabled}
                         onCheckedChange={(checked) => updateUserSettings({ soundEnabled: checked })}
@@ -2799,78 +2678,123 @@ export default function MornGPTHomepage() {
                   </div>
                 </div>
 
-                {/* Privacy & Security */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 dark:text-[#ececf1] flex items-center">
-                    <ShieldIcon className="w-4 h-4 mr-2" />
-                    Privacy & Security
+                {/* 3. Manage Billing */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center text-xs">
+                      <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-1.5">
+                        <CreditCard className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      Billing
                   </h4>
-                  <div className="space-y-3">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#1e3a8a] dark:to-[#3730a3] rounded-lg border border-blue-100 dark:border-blue-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-white">Current Plan</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Free Plan</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-white dark:bg-[#40414f]">Active</Badge>
+                      </div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm text-gray-700 dark:text-gray-300">Auto-save Conversations</Label>
-                      <Switch
-                        checked={appUser?.settings?.autoSave}
-                        onCheckedChange={(checked) => updateUserSettings({ autoSave: checked })}
-                      />
+                        <div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-white">Next Billing</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">No active subscription</p>
+                        </div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      </div>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700 shadow-sm"
+                      onClick={() => setShowBillingDialog(true)}
                     >
-                      <Lock className="w-4 h-4 mr-2" />
-                      Change Password
+                      <CreditCard className="w-4 h-4 mr-1" />
+                      Manage Billing
                     </Button>
                   </div>
                 </div>
 
-                {/* Help & Support */}
-                <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900 dark:text-[#ececf1] flex items-center">
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    Help & Support
+                {/* 4. Privacy & Security */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-4 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center text-xs">
+                      <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-lg mr-1.5">
+                        <ShieldIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
+                      </div>
+                      Privacy
                   </h4>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                    >
-                      <HelpCircle className="w-4 h-4 mr-2" />
-                      Help Center
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Contact Support
-                    </Button>
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
                   </div>
+                  <div className="space-y-2">
+                    <div className="p-3 bg-gradient-to-r from-red-50 to-pink-50 dark:from-[#7f1d1d] dark:to-[#831843] rounded-lg border border-red-100 dark:border-red-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-white">Password</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Last changed: 30 days ago</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-white dark:bg-[#40414f]">Secure</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-white">2FA Status</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Not enabled</p>
+                        </div>
+                        <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPrivacyDialog(true)}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700 shadow-sm"
+                    >
+                      <ShieldIcon className="w-4 h-4 mr-1" />
+                      Privacy Settings
+                    </Button>
                 </div>
               </div>
 
-              <Separator className="bg-gray-200 dark:bg-[#565869]" />
-
-              {/* Danger Zone */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-red-600 dark:text-red-400">Danger Zone</h4>
-                <div className="flex space-x-2">
+                {/* 5. Help & Support */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-4 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center text-xs">
+                      <div className="p-1 bg-orange-100 dark:bg-orange-900/30 rounded-lg mr-1.5">
+                        <HelpCircle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      Support
+                    </h4>
+                    <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-[#7c2d12] dark:to-[#991b1b] rounded-lg border border-orange-100 dark:border-orange-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-white">Response Time</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">Usually within 24 hours</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-white dark:bg-[#40414f]">Fast</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-white">Support Hours</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">24/7 available</p>
+                        </div>
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      </div>
+                    </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white border-orange-600 hover:border-orange-700 shadow-sm"
                   >
-                    Clear All Data
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Contact Support
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
-                  >
-                    Delete Account
-                  </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3045,371 +2969,7 @@ export default function MornGPTHomepage() {
           </DialogContent>
         </Dialog>
 
-        {/* Combined Profile & Settings Dialog */}
-        <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-          <DialogContent className="sm:max-w-2xl max-h-[80vh] bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869] flex flex-col">
-            <DialogHeader className="flex-shrink-0">
-              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
-                <User className="w-5 h-5" />
-                <span>Profile & Settings</span>
-              </DialogTitle>
-            </DialogHeader>
 
-            <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]" type="always">
-              <div className="p-1" style={{ minHeight: '400px' }}>
-                <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="profile" className="flex items-center space-x-2">
-                      <User className="w-4 h-4" />
-                      <span>Profile</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="preferences" className="flex items-center space-x-2">
-                      <Settings className="w-4 h-4" />
-                      <span>Preferences</span>
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="profile" className="space-y-6">
-                    {/* Profile Header */}
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-                          <User className="w-8 h-8 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{appUser?.name}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{appUser?.email}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            {appUser?.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {appUser?.isPro ? "Pro Member" : "Free User"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      {!appUser?.isPro && (
-                        <Button
-                          onClick={() => setShowUpgradeDialog(true)}
-                          className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white border-0 shadow-lg"
-                        >
-                          <Crown className="w-4 h-4 mr-2" />
-                          Upgrade to Pro
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Profile Form */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Personal Information</h4>
-                        <div className="flex space-x-2">
-                          {isEditingProfile && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setIsEditingProfile(false)}
-                              className="text-gray-600 dark:text-gray-400"
-                            >
-                              Cancel
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              if (isEditingProfile) {
-                                saveUserProfile()
-                              } else {
-                                setIsEditingProfile(true)
-                              }
-                            }}
-                            disabled={isEditingProfile && profileSaveStatus === "saving"}
-                            className="text-gray-600 dark:text-gray-400"
-                          >
-                            {isEditingProfile ? (
-                              profileSaveStatus === "saving" ? "Saving..." : "Save"
-                            ) : (
-                              "Edit"
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="profileName" className="text-gray-900 dark:text-[#ececf1]">
-                            Full Name
-                          </Label>
-                          <Input
-                            id="profileName"
-                            value={userProfileForm.name}
-                            onChange={(e) => setUserProfileForm({ ...userProfileForm, name: e.target.value })}
-                            disabled={!isEditingProfile}
-                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="profileEmail" className="text-gray-900 dark:text-[#ececf1]">
-                            Email Address
-                          </Label>
-                          <Input
-                            id="profileEmail"
-                            type="email"
-                            value={userProfileForm.email}
-                            onChange={(e) => setUserProfileForm({ ...userProfileForm, email: e.target.value })}
-                            disabled={!isEditingProfile}
-                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="profilePhone" className="text-gray-900 dark:text-[#ececf1]">
-                            Phone Number
-                          </Label>
-                          <Input
-                            id="profilePhone"
-                            value={userProfileForm.phone}
-                            onChange={(e) => setUserProfileForm({ ...userProfileForm, phone: e.target.value })}
-                            disabled={!isEditingProfile}
-                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="profileLanguage" className="text-gray-900 dark:text-[#ececf1]">
-                            Language
-                          </Label>
-                          <Select
-                            value={userProfileForm.language}
-                            onValueChange={(value) => setUserProfileForm({ ...userProfileForm, language: value })}
-                            disabled={!isEditingProfile}
-                          >
-                            <SelectTrigger className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
-                              <SelectContent>
-                                <SelectItem value="en">English</SelectItem>
-                                <SelectItem value="es">Spanish</SelectItem>
-                                <SelectItem value="fr">French</SelectItem>
-                                <SelectItem value="de">German</SelectItem>
-                                <SelectItem value="zh">Chinese</SelectItem>
-                              </SelectContent>
-                            </SelectTrigger>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="profileBio" className="text-gray-900 dark:text-[#ececf1]">
-                          Bio
-                        </Label>
-                        <Textarea
-                          id="profileBio"
-                          value={userProfileForm.bio}
-                          onChange={(e) => setUserProfileForm({ ...userProfileForm, bio: e.target.value })}
-                          disabled={!isEditingProfile}
-                          placeholder="Tell us about yourself..."
-                          className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                        />
-                      </div>
-
-
-
-                      {profileSaveStatus === "success" && (
-                        <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                          <p className="text-sm text-green-600 dark:text-green-400">Profile updated successfully!</p>
-                        </div>
-                      )}
-
-                      {profileSaveStatus === "error" && (
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                          <p className="text-sm text-red-600 dark:text-red-400">Failed to update profile. Please try again.</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Account Actions */}
-                    <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] mb-3">Account Actions</h4>
-                      <div className="space-y-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowSettingsDialog(true)}
-                          className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Preferences & Settings
-                        </Button>
-                        {!appUser?.isPro && (
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowUpgradeDialog(true)}
-                            className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                          >
-                            <Crown className="w-4 h-4 mr-2 text-yellow-500" />
-                            Upgrade to Pro
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          onClick={confirmLogout}
-                          className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={confirmDeleteAccount}
-                          className="w-full justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Account
-                        </Button>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="preferences" className="space-y-4">
-                    {/* Theme Settings */}
-                                         <div className="space-y-4">
-                       <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-base">Appearance</h4>
-                       <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                                                     <div className="space-y-1">
-                             <Label className="text-gray-900 dark:text-[#ececf1] text-base font-normal">Theme</Label>
-                             <p className="text-base text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
-                          </div>
-                          <Select
-                            value={appUser?.settings?.theme || "auto"}
-                            onValueChange={(value) => {
-                              updateUserSettings({ theme: value as "light" | "dark" | "auto" })
-                              applyTheme(value as "light" | "dark" | "auto")
-                            }}
-                          >
-                            <SelectTrigger className="w-32 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
-                              {appUser?.settings?.theme === "light" ? "Light" : 
-                               appUser?.settings?.theme === "dark" ? "Dark" : "Auto"}
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="light">Light</SelectItem>
-                              <SelectItem value="dark">Dark</SelectItem>
-                              <SelectItem value="auto">Auto</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Notification Settings */}
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] text-base">Notifications</h4>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="text-gray-900 dark:text-[#ececf1] text-base font-normal">Push Notifications</Label>
-                            <p className="text-base text-gray-500 dark:text-gray-400">Receive notifications for new messages</p>
-                          </div>
-                          <Switch
-                            checked={appUser?.settings?.notifications || false}
-                            onCheckedChange={(checked) => updateUserSettings({ notifications: checked })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <Label className="text-gray-900 dark:text-[#ececf1] text-base font-normal">Sound Effects</Label>
-                            <p className="text-base text-gray-500 dark:text-gray-400">Play sounds for notifications</p>
-                          </div>
-                          <Switch
-                            checked={appUser?.settings?.soundEnabled || false}
-                            onCheckedChange={(checked) => updateUserSettings({ soundEnabled: checked })}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-
-
-                                          {/* Enhanced Delete Account */}
-                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-medium text-red-900 dark:text-red-100 text-base">Account Security</h4>
-                          </div>
-
-                        </div>
-                        <div className="border-t border-red-200 dark:border-red-700 pt-3">
-                          <div className="space-y-2">
-                            <div>
-
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={startEnhancedDeleteAccount}
-                                  className="bg-white dark:bg-[#40414f] text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs"
-                                >
-                                  <Trash2 className="w-3 h-3 mr-1" />
-                                  Delete Account
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled
-                                  className="bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600 cursor-not-allowed text-xs"
-                                  title="Contact support team to restore your account"
-                                >
-                                  <ShieldCheck className="w-3 h-3 mr-1" />
-                                  Restore Account
-                                </Button>
-                              </div>
-
-                            </div>
-                            
-
-                      </div>
-                      
-
-                    </div>
-                  </div>
-                  
-                  {/* Extra space to ensure scrollbar appears */}
-                  <div className="h-40"></div>
-
-                    {/* Account Actions */}
-                    <div className="border-t border-gray-200 dark:border-[#565869] pt-4">
-                      <h4 className="font-medium text-gray-900 dark:text-[#ececf1] mb-3">Account Actions</h4>
-                      <div className="space-y-2">
-                        {!appUser?.isPro && (
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowUpgradeDialog(true)}
-                            className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                          >
-                            <Crown className="w-4 h-4 mr-2 text-yellow-500" />
-                            Upgrade to Pro
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          onClick={confirmLogout}
-                          className="w-full justify-start bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={confirmDeleteAccount}
-                          className="w-full justify-start text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete Account
-                        </Button>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-            </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
 
         {/* Logout Confirmation Dialog */}
         <Dialog open={showLogoutConfirmDialog} onOpenChange={setShowLogoutConfirmDialog}>
@@ -3420,18 +2980,18 @@ export default function MornGPTHomepage() {
                 <span>Confirm Sign Out</span>
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+                    <div className="space-y-4">
               <p className="text-gray-700 dark:text-gray-300">
                 Are you sure you want to sign out? Your current session will be ended.
               </p>
               <div className="flex space-x-2">
-                <Button
-                  variant="outline"
+                        <Button
+                          variant="outline"
                   onClick={() => setShowLogoutConfirmDialog(false)}
                   className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                >
+                        >
                   Cancel
-                </Button>
+                        </Button>
                 <Button
                   onClick={() => {
                     setShowLogoutConfirmDialog(false)
@@ -3441,8 +3001,8 @@ export default function MornGPTHomepage() {
                 >
                   Sign Out
                 </Button>
-              </div>
-            </div>
+                        </div>
+                      </div>
           </DialogContent>
         </Dialog>
 
@@ -3460,194 +3020,464 @@ export default function MornGPTHomepage() {
                 <p className="text-sm text-red-600 dark:text-red-400">
                   <strong>Warning:</strong> This action cannot be undone. All your data, including chats, bookmarks, and settings will be permanently deleted.
                 </p>
-              </div>
+                      </div>
               <p className="text-gray-700 dark:text-gray-300">
                 Are you absolutely sure you want to delete your account?
               </p>
-              <div className="flex space-x-2">
-                <Button
+                        <div className="flex space-x-2">
+                          <Button
                   variant="outline"
                   onClick={() => setShowDeleteAccountDialog(false)}
                   className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
                 >
                   Cancel
-                </Button>
-                <Button
+                          </Button>
+                          <Button
                   onClick={deleteUserAccount}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
+                          >
                   Delete Account
-                </Button>
-              </div>
+                          </Button>
+                        </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Enhanced Delete Account Dialog */}
-        <Dialog open={showEnhancedDeleteDialog} onOpenChange={setShowEnhancedDeleteDialog}>
-          <DialogContent className="sm:max-w-lg bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2 text-red-600 dark:text-red-400">
-                <Shield className="w-5 h-5" />
-                <span>Enhanced Account Deletion</span>
+        {/* Privacy Section Dialog */}
+        <Dialog open={showPrivacyDialog} onOpenChange={setShowPrivacyDialog}>
+          <DialogContent className="sm:max-w-lg bg-gradient-to-br from-white to-gray-50 dark:from-[#40414f] dark:to-[#2d2d30] border-gray-200 dark:border-[#565869] shadow-2xl">
+            <DialogHeader className="pb-3 border-b border-gray-100 dark:border-[#565869]">
+              <DialogTitle className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-[#ececf1]">
+                <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <ShieldIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        </div>
+                <span>Privacy & Security</span>
               </DialogTitle>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Manage your account security and privacy settings
+              </p>
             </DialogHeader>
             
-            {deleteAccountStep === "warning" && (
-              <div className="space-y-4">
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                  <div className="flex items-start space-x-3">
-                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+            <div className="space-y-4 py-3">
+              {/* Security Section */}
+              <div className="space-y-3">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-[#ececf1] flex items-center">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></div>
+                  Account Security
+                </h3>
+                
+                {/* Change Password */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                        <Lock className="w-4 h-4 text-white" />
+                        </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Password</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Last changed: 30 days ago
+                        </p>
+                    </div>
+                    </div>
+                        <Button
+                      size="sm"
+                          variant="outline"
+                      className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
+                        >
+                      Update
+                        </Button>
+                  </div>
+                </div>
+
+                {/* 2FA Method */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-sm">
+                        <ShieldIcon className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Two-Factor Authentication</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Status: <span className="text-orange-500 font-medium">Not enabled</span>
+                        </p>
+                      </div>
+                    </div>
+                          <Button
+                      size="sm"
+                            variant="outline"
+                      className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
+                        >
+                      Enable
+                        </Button>
+                      </div>
+                    </div>
+              </div>
+
+              {/* Privacy Section */}
+                      <div className="space-y-3">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-[#ececf1] flex items-center">
+                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-2"></div>
+                  Data Privacy
+                </h3>
+                
+                {/* Data Export */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                          </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Export Data</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Download your personal data
+                        </p>
+                        </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
+                    >
+                      Export
+                    </Button>
+                      </div>
+                    </div>
+
+                {/* Activity Log */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center shadow-sm">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                          </div>
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Activity Log</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          View your account activity
+                        </p>
+                        </div>
+                          </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
+                    >
+                      View
+                    </Button>
+                        </div>
+                      </div>
+                    </div>
+
+              {/* Danger Zone */}
+                      <div className="space-y-3">
+                <h3 className="text-base font-semibold text-red-600 dark:text-red-400 flex items-center">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                  Danger Zone
+                </h3>
+                
+                {/* Delete Account */}
+                <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-[#7f1d1d] dark:to-[#831843] rounded-lg p-3 border border-red-200 dark:border-red-800 shadow-sm">
+                        <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center shadow-sm">
+                        <AlertTriangle className="w-4 h-4 text-white" />
+                          </div>
+                      <div>
+                        <p className="font-medium text-sm text-red-600 dark:text-red-400">Delete Account</p>
+                        <p className="text-xs text-red-500 dark:text-red-400">
+                          This action cannot be undone
+                        </p>
+                        </div>
+                      </div>
+                          <Button
+                      size="sm"
+                            variant="outline"
+                      onClick={() => {
+                        setShowPrivacyDialog(false)
+                        setShowDeleteAccountDialog(true)
+                      }}
+                      className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-white dark:bg-[#40414f] shadow-sm text-xs"
+                    >
+                      Delete
+                        </Button>
+                      </div>
+                    </div>
+            </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Billing Management Dialog */}
+        <Dialog open={showBillingDialog} onOpenChange={setShowBillingDialog}>
+          <DialogContent className="sm:max-w-2xl bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <CreditCard className="w-5 h-5" />
+                <span>Billing Management</span>
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[70vh]">
+              <div className="space-y-6 p-1">
+                {/* Auto Renew Option */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#40414f] rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                      <RefreshCw className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    </div>
                     <div>
-                      <h4 className="font-medium text-red-900 dark:text-red-100 mb-2">Account Deletion Process</h4>
-                      <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
-                        <li>• You must write a confirmation phrase exactly as shown</li>
-                        <li>• Complete 2FA verification via email/SMS</li>
-                        <li>• Your data will be stored for 90 days for restoration</li>
-                        <li>• After 90 days, data is permanently deleted</li>
-                      </ul>
+                      <p className="font-medium text-gray-900 dark:text-[#ececf1]">Auto Renew</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Automatically renew your subscription
+                      </p>
                     </div>
                   </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowEnhancedDeleteDialog(false)}
-                    className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => setDeleteAccountStep("confirmation")}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {deleteAccountStep === "confirmation" && (
-              <div className="space-y-4">
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
-                    <strong>Step 1:</strong> Write the following phrase exactly as shown to confirm deletion:
-                  </p>
-                  <div className="p-3 bg-white dark:bg-[#40414f] border border-yellow-300 dark:border-yellow-700 rounded font-mono text-sm text-gray-900 dark:text-[#ececf1]">
-                    {deleteConfirmationPhrase}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmation-input" className="text-gray-900 dark:text-[#ececf1]">
-                    Type the confirmation phrase:
-                  </Label>
-                  <Input
-                    id="confirmation-input"
-                    value={userConfirmationInput}
-                    onChange={(e) => setUserConfirmationInput(e.target.value)}
-                    placeholder="Enter the phrase exactly as shown above"
-                    className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  <Switch
+                    checked={appUser?.isPro ? autoRenewEnabled : false}
+                    onCheckedChange={(checked) => {
+                      if (checked && !appUser?.isPro) {
+                        setShowBillingDialog(false)
+                        setShowUpgradeDialog(true)
+                      } else if (appUser?.isPro) {
+                        setAutoRenewEnabled(checked)
+                        if (checked) {
+                          // Calculate next billing date (30 days from now)
+                          const nextDate = new Date()
+                          nextDate.setDate(nextDate.getDate() + 30)
+                          setNextBillingDate(nextDate.toISOString().split('T')[0])
+                        }
+                      }
+                    }}
                   />
                 </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setDeleteAccountStep("warning")}
-                    className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={verifyDeleteAccount}
-                    disabled={userConfirmationInput.trim() !== deleteConfirmationPhrase}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
-                  >
-                    Verify & Continue
-                  </Button>
-                </div>
-              </div>
-            )}
 
-            {deleteAccountStep === "2fa" && (
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                  <div className="flex items-start space-x-3">
-                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">2FA Verification</h4>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        A 6-digit verification code has been sent to your email/SMS. 
-                        Enter it below to complete the deletion process.
-                      </p>
-                      <div className="mt-2 p-2 bg-white dark:bg-[#40414f] border border-blue-300 dark:border-blue-700 rounded font-mono text-sm text-gray-900 dark:text-[#ececf1]">
-                        Code: {generatedTwoFACode}
+                {/* Payment Method */}
+                <div className="p-3 bg-gray-50 dark:bg-[#40414f] rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                        <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-[#ececf1]">Payment Method</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Manage your payment information
+                        </p>
+                      </div>
+                    </div>
+                <Button
+                      size="sm"
+                  variant="outline"
+                  onClick={() => {
+                        if (appUser?.isPro) {
+                          setShowPaymentEditDialog(true)
+                        } else {
+                          // For free users, redirect to upgrade
+                          setShowBillingDialog(false)
+                          setShowUpgradeDialog(true)
+                        }
+                  }}
+                      className="text-gray-600 dark:text-gray-400"
+                >
+                      <Edit3 className="w-4 h-4 mr-2" />
+                      Edit
+                </Button>
+              </div>
+                  
+                  {appUser?.isPro ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 p-2 bg-white dark:bg-[#565869] rounded border">
+                        <div className="w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                          <CreditCard className="w-3 h-3 text-gray-600 dark:text-gray-400" />
+            </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                            Visa ending in 4242
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Expires 12/25
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          Default
+                        </Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                      <div className="flex items-center space-x-2">
+                        <CreditCard className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                        <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                          No payment method added
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Billing Information */}
+                {appUser?.isPro && (
+                  <div className="p-3 bg-gray-50 dark:bg-[#40414f] rounded-lg">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
+                        <Receipt className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-[#ececf1]">Billing Information</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Your billing details and history
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Next billing date:</span>
+                        <span className="text-gray-900 dark:text-[#ececf1]">March 15, 2025</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                        <span className="text-gray-900 dark:text-[#ececf1]">$19.99/month</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                        <Badge variant="default" className="text-xs">
+                          Active
+                        </Badge>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="2fa-input" className="text-gray-900 dark:text-[#ececf1]">
-                    6-Digit Verification Code:
-                  </Label>
-                  <Input
-                    id="2fa-input"
-                    value={twoFACode}
-                    onChange={(e) => setTwoFACode(e.target.value)}
-                    placeholder="000000"
-                    maxLength={6}
-                    className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setDeleteAccountStep("confirmation")}
-                    className="flex-1 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={confirmFinalDeletion}
-                    disabled={twoFACode.length !== 6}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
-                  >
-                    Verify & Delete
-                  </Button>
-                </div>
+                )}
               </div>
-            )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
 
-            {deleteAccountStep === "final" && (
-              <div className="space-y-4">
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                  <div className="flex items-start space-x-3">
-                    <Check className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">Account Deleted Successfully</h4>
-                      <p className="text-sm text-green-700 dark:text-green-300">
-                        Your account has been deleted. Your data will be stored for 90 days for potential restoration.
-                      </p>
-                      {accountDeletionDate && (
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                          Deleted on: {accountDeletionDate.toLocaleDateString()} at {accountDeletionDate.toLocaleTimeString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    <strong>Restoration Period:</strong> You can restore your account within 90 days by logging in again.
-                  </p>
-                </div>
-                <Button
-                  onClick={deleteUserAccount}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Complete Deletion
-                </Button>
+                      {/* Payment Method Edit Dialog */}
+                      <Dialog open={showPaymentEditDialog} onOpenChange={setShowPaymentEditDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+                            <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                              <CreditCard className="w-5 h-5" />
+                              <span>Edit Payment Method</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+                            {/* Payment Method Options */}
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
+                                <input
+                                  type="radio"
+                                  id="card"
+                                  name="paymentMethod"
+                                  value="card"
+                                  checked={paymentMethod.type === "card"}
+                                  onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <CreditCard className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                                <label htmlFor="card" className="text-gray-900 dark:text-[#ececf1]">Credit/Debit Card</label>
               </div>
-            )}
+                              
+                              <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
+                                <input
+                                  type="radio"
+                                  id="paypal"
+                                  name="paymentMethod"
+                                  value="paypal"
+                                  checked={paymentMethod.type === "paypal"}
+                                  onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">P</div>
+                                <label htmlFor="paypal" className="text-gray-900 dark:text-[#ececf1]">PayPal</label>
+                              </div>
+                              
+                              <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
+                                <input
+                                  type="radio"
+                                  id="wechat"
+                                  name="paymentMethod"
+                                  value="wechat"
+                                  checked={paymentMethod.type === "wechat"}
+                                  onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <div className="w-5 h-5 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold">W</div>
+                                <label htmlFor="wechat" className="text-gray-900 dark:text-[#ececf1]">WeChat Pay</label>
+                              </div>
+                            </div>
+
+                            {/* Card Details (if card is selected) */}
+                            {paymentMethod.type === "card" && (
+                              <div className="space-y-3">
+                                <div>
+                                  <Label htmlFor="cardNumber" className="text-gray-700 dark:text-gray-300">Card Number</Label>
+                                  <Input
+                                    id="cardNumber"
+                                    placeholder="1234 5678 9012 3456"
+                                    className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <Label htmlFor="expiry" className="text-gray-700 dark:text-gray-300">Expiry Date</Label>
+                                    <Input
+                                      id="expiry"
+                                      placeholder="MM/YY"
+                                      className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="cvv" className="text-gray-700 dark:text-gray-300">CVV</Label>
+                                    <Input
+                                      id="cvv"
+                                      placeholder="123"
+                                      className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* PayPal/WeChat specific fields */}
+                            {(paymentMethod.type === "paypal" || paymentMethod.type === "wechat") && (
+                              <div>
+                                <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+                                  {paymentMethod.type === "paypal" ? "PayPal Email" : "WeChat Account"}
+                                </Label>
+                                <Input
+                                  id="email"
+                                  placeholder={paymentMethod.type === "paypal" ? "your@email.com" : "WeChat ID"}
+                                  className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <DialogFooter className="flex space-x-2">
+                <Button
+                  variant="outline"
+                              onClick={() => setShowPaymentEditDialog(false)}
+                              className="border-gray-300 dark:border-[#565869]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                              onClick={() => {
+                                // Here you would save the payment method
+                                console.log("Payment method updated:", paymentMethod)
+                                setShowPaymentEditDialog(false)
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700"
+                >
+                              Save Changes
+                </Button>
+                          </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
