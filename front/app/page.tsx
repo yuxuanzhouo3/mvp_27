@@ -209,13 +209,15 @@ const externalModels = [
 const pricingPlans = [
   {
     name: "Basic",
-    price: "$9.99",
+    price: "$9.98",
+    annualPrice: "$6.99",
     period: "month",
-    features: ["Access to all MornGPT models", "100 Multi-GPT queries/month", "Basic support", "Chat history"],
+    features: ["Access to all MornGPT models", "100 Multi-GPT queries/month", "Basic support", "Chat history", "Remove Ads"],
   },
   {
     name: "Pro",
-    price: "$19.99",
+    price: "$39.98",
+    annualPrice: "$27.99",
     period: "month",
     features: [
       "Everything in Basic",
@@ -229,7 +231,8 @@ const pricingPlans = [
   },
   {
     name: "Enterprise",
-    price: "$49.99",
+    price: "$99.98",
+    annualPrice: "$69.99",
     period: "month",
     features: [
       "Everything in Pro",
@@ -351,6 +354,8 @@ export default function MornGPTHomepage() {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
+  const [selectedPlanInDialog, setSelectedPlanInDialog] = useState<(typeof pricingPlans)[0] | null>(null)
   const [showBillingDialog, setShowBillingDialog] = useState(false)
   const [showPaymentEditDialog, setShowPaymentEditDialog] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<(typeof pricingPlans)[0] | null>(null)
@@ -392,6 +397,8 @@ export default function MornGPTHomepage() {
   const [showDownloadSection, setShowDownloadSection] = useState(false)
   const [adsEnabled, setAdsEnabled] = useState(true)
   const [selectedPlatform, setSelectedPlatform] = useState<{platform: string, variant?: string} | null>(null)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("credit-card")
+  const [currentPlan, setCurrentPlan] = useState<"Basic" | "Pro" | "Enterprise" | null>(null)
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -1726,7 +1733,7 @@ export default function MornGPTHomepage() {
                             className="w-40 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                           >
                             <div className="flex items-center space-x-2">
-                              {appUser.isPro && <Crown className="w-4 h-4 text-yellow-500" />}
+                                                              {appUser.isPro && <Crown className="w-4 h-4 text-gray-900 dark:text-gray-100" />}
                               <User className="w-4 h-4" />
                               <span className="truncate">{appUser.name}</span>
                               <ChevronDown className="w-3 h-3" />
@@ -1747,16 +1754,7 @@ export default function MornGPTHomepage() {
                             </Button>
                             )}
 
-                            {!appUser.isPro && (
-                              <Button
-                                variant="ghost"
-                                className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                onClick={() => setShowUpgradeDialog(true)}
-                              >
-                                <Crown className="w-4 h-4 mr-2 text-yellow-500" />
-                                Upgrade to Pro
-                              </Button>
-                            )}
+
                             <Button
                               variant="ghost"
                               className="w-full justify-start text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
@@ -2856,7 +2854,7 @@ export default function MornGPTHomepage() {
                     <Button
                       variant="outline"
                       size="sm"
-                          className="w-32 h-7 bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700"
+                          className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                     >
                           <span className="text-xs">Turn Off Ads</span>
                     </Button>
@@ -2871,7 +2869,7 @@ export default function MornGPTHomepage() {
                     <Button
                       variant="outline"
                       size="sm"
-                        className="w-32 h-7 bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-600 hover:border-yellow-700"
+                        className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                         onClick={() => setShowShortcutDialog(true)}
                     >
                         <span className="text-xs">Enabled</span>
@@ -2885,7 +2883,7 @@ export default function MornGPTHomepage() {
                     <Button
                       variant="outline"
                       size="sm"
-                        className="w-32 h-7 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
+                        className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                         onClick={() => setShowBillingDialog(true)}
                     >
                         <span className="text-xs">Manage</span>
@@ -2899,7 +2897,7 @@ export default function MornGPTHomepage() {
                   <Button
                     variant="outline"
                     size="sm"
-                        className="w-32 h-7 bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
+                        className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                         onClick={() => setShowPrivacyDialog(true)}
                   >
                         <span className="text-xs">Settings</span>
@@ -2913,7 +2911,7 @@ export default function MornGPTHomepage() {
                   <Button
                     variant="outline"
                     size="sm"
-                        className="w-32 h-7 bg-orange-600 hover:bg-orange-700 text-white border-orange-600 hover:border-orange-700"
+                        className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                   >
                         <span className="text-xs">Contact</span>
                   </Button>
@@ -2930,19 +2928,56 @@ export default function MornGPTHomepage() {
           <DialogContent className="sm:max-w-4xl bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
-                <Crown className="w-5 h-5 text-yellow-500" />
+                <Crown className="w-5 h-5 text-blue-500" />
                 <span>Choose Your MornGPT Plan</span>
               </DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Billing Period Toggle */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="bg-gray-100 dark:bg-[#565869] rounded-lg p-1 flex">
+                <Button
+                  variant={billingPeriod === "monthly" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setBillingPeriod("monthly")}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    billingPeriod === "monthly" 
+                      ? "bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] shadow-sm" 
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-[#ececf1]"
+                  }`}
+                >
+                  Monthly
+                </Button>
+                <Button
+                  variant={billingPeriod === "annual" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setBillingPeriod("annual")}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    billingPeriod === "annual" 
+                      ? "bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] shadow-sm" 
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-[#ececf1]"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Annual</span>
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 text-xs px-2 py-0.5">
+                      Save 30%
+                    </Badge>
+                  </div>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-6">
               {pricingPlans.map((plan) => (
                 <div
                   key={plan.name}
-                  className={`relative p-6 rounded-lg border-2 ${
-                    plan.popular
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#40414f]"
+                  className={`relative p-6 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-lg flex flex-col h-full ${
+                    selectedPlanInDialog?.name === plan.name
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg"
+                      : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#40414f] hover:border-gray-300 dark:hover:border-[#40414f]"
                   }`}
+                  onClick={() => setSelectedPlanInDialog(plan)}
                 >
                   {plan.popular && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -2952,11 +2987,24 @@ export default function MornGPTHomepage() {
                   <div className="text-center mb-4">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-[#ececf1]">{plan.name}</h3>
                     <div className="mt-2">
-                      <span className="text-3xl font-bold text-gray-900 dark:text-[#ececf1]">{plan.price}</span>
-                      <span className="text-gray-500 dark:text-gray-400">/{plan.period}</span>
+                      <div className="flex items-baseline justify-center">
+                        <span className="text-3xl font-bold text-gray-900 dark:text-[#ececf1]">
+                          {billingPeriod === "annual" ? plan.annualPrice : plan.price}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-1">
+                          /{billingPeriod === "annual" ? "month" : plan.period}
+                        </span>
+                      </div>
+                      {billingPeriod === "annual" && (
+                        <div className="mt-1">
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 text-xs">
+                            Save 30%
+                          </Badge>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <ul className="space-y-2 mb-6">
+                  <ul className="space-y-2 mb-6 flex-grow">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-center space-x-2">
                         <Check className="w-4 h-4 text-green-500" />
@@ -2966,18 +3014,20 @@ export default function MornGPTHomepage() {
                   </ul>
                   <Button
                     onClick={() => handleUpgradeClick(plan)}
-                    className={`w-full ${
-                      plan.popular
+                    className={`w-full mt-auto ${
+                      selectedPlanInDialog?.name === plan.name
                         ? "bg-blue-500 hover:bg-blue-600 text-white"
                         : "bg-gray-800 hover:bg-gray-900 dark:bg-gray-200 dark:text-gray-800 dark:hover:bg-gray-300 text-white"
                     }`}
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Choose {plan.name}
+                    {selectedPlanInDialog?.name === plan.name ? "Selected" : `Choose ${plan.name}`}
                   </Button>
                 </div>
               ))}
             </div>
+            
+
           </DialogContent>
         </Dialog>
 
@@ -2992,79 +3042,220 @@ export default function MornGPTHomepage() {
             </DialogHeader>
 
             {selectedPlan && (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {/* Plan Summary */}
-                <div className="p-4 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                <div className="p-3 bg-gray-50 dark:bg-[#565869] rounded-lg">
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{selectedPlan.name} Plan</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Monthly subscription</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {billingPeriod === "annual" ? "Annual subscription" : "Monthly subscription"}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-[#ececf1]">{selectedPlan.price}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">per month</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-[#ececf1]">
+                        {billingPeriod === "annual" ? selectedPlan.annualPrice : selectedPlan.price}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        per {billingPeriod === "annual" ? "month" : "month"}
+                      </div>
+                      {billingPeriod === "annual" && (
+                        <div className="text-xs text-green-600 dark:text-green-400">
+                          Billed annually (Save 30%)
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
+                {/* Payment Method Selection */}
+                <div className="space-y-1">
+                  <Label className="text-gray-900 dark:text-[#ececf1] text-sm">Payment Method</Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod("credit-card")}
+                      className={`p-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                        selectedPaymentMethod === "credit-card"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                          : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#565869] text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                      }`}
+                    >
+                      💳 Card
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod("paypal")}
+                      className={`p-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                        selectedPaymentMethod === "paypal"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                          : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#565869] text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                      }`}
+                    >
+                      💰 PayPal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod("stripe")}
+                      className={`p-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                        selectedPaymentMethod === "stripe"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                          : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#565869] text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                      }`}
+                    >
+                      💳 Stripe
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod("wechat")}
+                      className={`p-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                        selectedPaymentMethod === "wechat"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                          : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#565869] text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                      }`}
+                    >
+                      💬 WeChat
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod("alipay")}
+                      className={`p-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                        selectedPaymentMethod === "alipay"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                          : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#565869] text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                      }`}
+                    >
+                      💳 Alipay
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod("usdt")}
+                      className={`p-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                        selectedPaymentMethod === "usdt"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                          : "border-gray-200 dark:border-[#565869] bg-white dark:bg-[#565869] text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                      }`}
+                    >
+                      ₿ USDT
+                    </button>
+                  </div>
+                </div>
+
                 {/* Payment Form */}
-                <form onSubmit={handlePayment} className="space-y-4">
-                  <div>
-                    <Label htmlFor="cardNumber" className="text-gray-900 dark:text-[#ececf1]">
-                      Card Number
-                    </Label>
-                    <Input
-                      id="cardNumber"
-                      type="text"
-                      placeholder="1234 5678 9012 3456"
-                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                      required
-                    />
-                  </div>
+                <form onSubmit={handlePayment} className="space-y-2">
+                  {selectedPaymentMethod === "credit-card" && (
+                    <>
+                                              <div>
+                          <Label htmlFor="cardNumber" className="text-gray-900 dark:text-[#ececf1] text-sm">
+                            Card Number
+                          </Label>
+                        <Input
+                          id="cardNumber"
+                          type="text"
+                          placeholder="1234 5678 9012 3456"
+                          className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          required
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="expiry" className="text-gray-900 dark:text-[#ececf1]">
-                        Expiry Date
-                      </Label>
-                      <Input
-                        id="expiry"
-                        type="text"
-                        placeholder="MM/YY"
-                        className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cvc" className="text-gray-900 dark:text-[#ececf1]">
-                        CVC
-                      </Label>
-                      <Input
-                        id="cvc"
-                        type="text"
-                        placeholder="123"
-                        className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                        required
-                      />
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="expiry" className="text-gray-900 dark:text-[#ececf1] text-sm">
+                            Expiry Date
+                          </Label>
+                          <Input
+                            id="expiry"
+                            type="text"
+                            placeholder="MM/YY"
+                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cvc" className="text-gray-900 dark:text-[#ececf1] text-sm">
+                            CVC
+                          </Label>
+                          <Input
+                            id="cvc"
+                            type="text"
+                            placeholder="123"
+                            className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                            required
+                          />
+                        </div>
+                      </div>
 
-                  <div>
-                    <Label htmlFor="billingName" className="text-gray-900 dark:text-[#ececf1]">
-                      Billing Name
-                    </Label>
-                    <Input
-                      id="billingName"
-                      type="text"
-                      placeholder="John Doe"
-                      className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                      required
-                    />
-                  </div>
+                      <div>
+                        <Label htmlFor="billingName" className="text-gray-900 dark:text-[#ececf1] text-sm">
+                          Billing Name
+                        </Label>
+                        <Input
+                          id="billingName"
+                          type="text"
+                          placeholder="John Doe"
+                          className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="billingAddress" className="text-gray-900 dark:text-[#ececf1] text-sm">
+                          Billing Address
+                        </Label>
+                        <Input
+                          id="billingAddress"
+                          type="text"
+                          placeholder="123 Main St, City, State 12345"
+                          className="bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {selectedPaymentMethod === "paypal" && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        You will be redirected to PayPal to complete your payment
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedPaymentMethod === "stripe" && (
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center">
+                      <p className="text-sm text-purple-700 dark:text-purple-300">
+                        Secure payment powered by Stripe
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedPaymentMethod === "wechat" && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        Scan QR code with WeChat to pay
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedPaymentMethod === "alipay" && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Scan QR code with Alipay to pay
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedPaymentMethod === "usdt" && (
+                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-center">
+                      <p className="text-sm text-orange-700 dark:text-orange-300">
+                        Pay with USDT (Tether)
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex items-center space-x-2">
                     <input type="checkbox" id="terms" required className="rounded" />
-                    <Label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300">
+                    <Label htmlFor="terms" className="text-xs text-gray-700 dark:text-gray-300">
                       I agree to the Terms of Service and Privacy Policy
                     </Label>
                   </div>
@@ -3079,7 +3270,7 @@ export default function MornGPTHomepage() {
                       Cancel
                     </Button>
                     <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                      Pay {selectedPlan.price}
+                      Pay {billingPeriod === "annual" ? selectedPlan.annualPrice : selectedPlan.price}
                     </Button>
                   </div>
                 </form>
@@ -3349,37 +3540,82 @@ export default function MornGPTHomepage() {
             </DialogHeader>
             <ScrollArea className="max-h-[70vh]">
               <div className="space-y-6 p-1">
-                {/* Auto Renew Option */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#40414f] rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                      <RefreshCw className="w-4 h-4 text-green-600 dark:text-green-400" />
+                {/* Upgrade Plan Section */}
+                <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                        <Crown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-[#ececf1]">
+                          {appUser?.isPro ? "Upgrade Your Plan" : "Upgrade to Pro"}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {appUser?.isPro ? "Explore higher tier plans" : "Unlock premium features and remove ads"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-[#ececf1]">Auto Renew</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Automatically renew your subscription
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={appUser?.isPro ? autoRenewEnabled : false}
-                    onCheckedChange={(checked) => {
-                      if (checked && !appUser?.isPro) {
+                    <Button
+                      size="sm"
+                      onClick={() => {
                         setShowBillingDialog(false)
                         setShowUpgradeDialog(true)
-                      } else if (appUser?.isPro) {
-                        setAutoRenewEnabled(checked)
-                        if (checked) {
-                          // Calculate next billing date (30 days from now)
-                          const nextDate = new Date()
-                          nextDate.setDate(nextDate.getDate() + 30)
-                          setNextBillingDate(nextDate.toISOString().split('T')[0])
-                        }
-                      }
-                    }}
-                  />
+                      }}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      {appUser?.isPro ? "Upgrade Plan" : "Upgrade to Pro"}
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Upgrade Section (for non-Pro users) */}
+                {!appUser?.isPro && (
+                  <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
+                          <Crown className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-[#ececf1]">Upgrade to Pro</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Unlock premium features and remove ads
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setShowBillingDialog(false)
+                          setShowUpgradeDialog(true)
+                        }}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                      >
+                        Upgrade Now
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center space-x-1">
+                        <Check className="w-3 h-3 text-green-500" />
+                        <span>No ads</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Check className="w-3 h-3 text-green-500" />
+                        <span>Priority support</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Check className="w-3 h-3 text-green-500" />
+                        <span>Advanced models</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Check className="w-3 h-3 text-green-500" />
+                        <span>Unlimited chats</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Payment Method */}
                 <div className="p-3 bg-gray-50 dark:bg-[#40414f] rounded-lg">
@@ -3461,12 +3697,26 @@ export default function MornGPTHomepage() {
                       </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Current Plan:</span>
+                        <span className="text-gray-900 dark:text-[#ececf1] font-medium">
+                          {currentPlan || "Pro"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Next billing date:</span>
                         <span className="text-gray-900 dark:text-[#ececf1]">March 15, 2025</span>
-                    </div>
+                      </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Amount:</span>
-                        <span className="text-gray-900 dark:text-[#ececf1]">$19.99/month</span>
+                        <span className="text-gray-900 dark:text-[#ececf1]">
+                          {currentPlan === "Basic" ? "$6.99" : 
+                           currentPlan === "Pro" ? "$27.99" : 
+                           currentPlan === "Enterprise" ? "$69.99" : "$27.99"}/month
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Billing Cycle:</span>
+                        <span className="text-gray-900 dark:text-[#ececf1]">Annual (Save 30%)</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Status:</span>
@@ -3477,6 +3727,38 @@ export default function MornGPTHomepage() {
                     </div>
                   </div>
                 )}
+
+                {/* Auto Renew Option - Moved to bottom */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#40414f] rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                      <RefreshCw className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-[#ececf1]">Auto Renew</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Automatically renew your subscription
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={appUser?.isPro ? autoRenewEnabled : false}
+                    onCheckedChange={(checked) => {
+                      if (checked && !appUser?.isPro) {
+                        setShowBillingDialog(false)
+                        setShowUpgradeDialog(true)
+                      } else if (appUser?.isPro) {
+                        setAutoRenewEnabled(checked)
+                        if (checked) {
+                          // Calculate next billing date (30 days from now)
+                          const nextDate = new Date()
+                          nextDate.setDate(nextDate.getDate() + 30)
+                          setNextBillingDate(nextDate.toISOString().split('T')[0])
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </ScrollArea>
           </DialogContent>
@@ -3493,8 +3775,8 @@ export default function MornGPTHomepage() {
             </DialogHeader>
                     <div className="space-y-4">
                             {/* Payment Method Options */}
-                      <div className="space-y-3">
-                              <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
+                      <div className="grid grid-cols-3 gap-2">
+                              <div className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-[#565869] rounded-lg">
                                 <input
                                   type="radio"
                                   id="card"
@@ -3502,13 +3784,13 @@ export default function MornGPTHomepage() {
                                   value="card"
                                   checked={paymentMethod.type === "card"}
                                   onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
-                                  className="w-4 h-4 text-blue-600"
+                                  className="w-3 h-3 text-blue-600"
                                 />
-                                <CreditCard className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                                <label htmlFor="card" className="text-gray-900 dark:text-[#ececf1]">Credit/Debit Card</label>
+                                <CreditCard className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                <label htmlFor="card" className="text-xs text-gray-900 dark:text-[#ececf1]">Card</label>
                           </div>
                               
-                              <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
+                              <div className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-[#565869] rounded-lg">
                                 <input
                                   type="radio"
                                   id="paypal"
@@ -3516,13 +3798,13 @@ export default function MornGPTHomepage() {
                                   value="paypal"
                                   checked={paymentMethod.type === "paypal"}
                                   onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
-                                  className="w-4 h-4 text-blue-600"
+                                  className="w-3 h-3 text-blue-600"
                                 />
-                                <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">P</div>
-                                <label htmlFor="paypal" className="text-gray-900 dark:text-[#ececf1]">PayPal</label>
+                                <div className="w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">P</div>
+                                <label htmlFor="paypal" className="text-xs text-gray-900 dark:text-[#ececf1]">PayPal</label>
                         </div>
                               
-                              <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
+                              <div className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-[#565869] rounded-lg">
                                 <input
                                   type="radio"
                                   id="wechat"
@@ -3530,10 +3812,52 @@ export default function MornGPTHomepage() {
                                   value="wechat"
                                   checked={paymentMethod.type === "wechat"}
                                   onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
-                                  className="w-4 h-4 text-blue-600"
+                                  className="w-3 h-3 text-blue-600"
                                 />
-                                <div className="w-5 h-5 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold">W</div>
-                                <label htmlFor="wechat" className="text-gray-900 dark:text-[#ececf1]">WeChat Pay</label>
+                                <div className="w-4 h-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold">W</div>
+                                <label htmlFor="wechat" className="text-xs text-gray-900 dark:text-[#ececf1]">WeChat</label>
+                      </div>
+                              
+                              <div className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-[#565869] rounded-lg">
+                                <input
+                                  type="radio"
+                                  id="alipay"
+                                  name="paymentMethod"
+                                  value="alipay"
+                                  checked={paymentMethod.type === "alipay"}
+                                  onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
+                                  className="w-3 h-3 text-blue-600"
+                                />
+                                <div className="w-4 h-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">A</div>
+                                <label htmlFor="alipay" className="text-xs text-gray-900 dark:text-[#ececf1]">Alipay</label>
+                      </div>
+                              
+                              <div className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-[#565869] rounded-lg">
+                                <input
+                                  type="radio"
+                                  id="stripe"
+                                  name="paymentMethod"
+                                  value="stripe"
+                                  checked={paymentMethod.type === "stripe"}
+                                  onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
+                                  className="w-3 h-3 text-blue-600"
+                                />
+                                <div className="w-4 h-4 bg-purple-500 rounded flex items-center justify-center text-white text-xs font-bold">S</div>
+                                <label htmlFor="stripe" className="text-xs text-gray-900 dark:text-[#ececf1]">Stripe</label>
+                      </div>
+                              
+                              <div className="flex items-center space-x-2 p-2 border border-gray-200 dark:border-[#565869] rounded-lg">
+                                <input
+                                  type="radio"
+                                  id="usdt"
+                                  name="paymentMethod"
+                                  value="usdt"
+                                  checked={paymentMethod.type === "usdt"}
+                                  onChange={(e) => setPaymentMethod({...paymentMethod, type: e.target.value})}
+                                  className="w-3 h-3 text-blue-600"
+                                />
+                                <div className="w-4 h-4 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold">₿</div>
+                                <label htmlFor="usdt" className="text-xs text-gray-900 dark:text-[#ececf1]">USDT</label>
                       </div>
                     </div>
 
@@ -3566,20 +3890,79 @@ export default function MornGPTHomepage() {
                                     />
                       </div>
                     </div>
+                                <div>
+                                  <Label htmlFor="billingAddress" className="text-gray-700 dark:text-gray-300">Billing Address</Label>
+                                  <Input
+                                    id="billingAddress"
+                                    placeholder="123 Main St, City, State 12345"
+                                    className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                  />
+                                </div>
                               </div>
                             )}
 
-                            {/* PayPal/WeChat specific fields */}
-                            {(paymentMethod.type === "paypal" || paymentMethod.type === "wechat") && (
+                            {/* PayPal/WeChat/Alipay specific fields */}
+                            {(paymentMethod.type === "paypal" || paymentMethod.type === "wechat" || paymentMethod.type === "alipay") && (
                               <div>
                                 <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
-                                  {paymentMethod.type === "paypal" ? "PayPal Email" : "WeChat Account"}
+                                  {paymentMethod.type === "paypal" ? "PayPal Email" : 
+                                   paymentMethod.type === "wechat" ? "WeChat Account" : "Alipay Account"}
                                 </Label>
                                 <Input
                                   id="email"
-                                  placeholder={paymentMethod.type === "paypal" ? "your@email.com" : "WeChat ID"}
+                                  placeholder={paymentMethod.type === "paypal" ? "your@email.com" : 
+                                              paymentMethod.type === "wechat" ? "WeChat ID" : "Alipay ID"}
                                   className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
                                 />
+                              </div>
+                            )}
+
+                            {/* Stripe specific fields */}
+                            {paymentMethod.type === "stripe" && (
+                              <div className="space-y-3">
+                                <div>
+                                  <Label htmlFor="stripeEmail" className="text-gray-700 dark:text-gray-300">Email Address</Label>
+                                  <Input
+                                    id="stripeEmail"
+                                    placeholder="your@email.com"
+                                    className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="stripeAccount" className="text-gray-700 dark:text-gray-300">Stripe Account ID</Label>
+                                  <Input
+                                    id="stripeAccount"
+                                    placeholder="acct_1234567890"
+                                    className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* USDT specific fields */}
+                            {paymentMethod.type === "usdt" && (
+                              <div className="space-y-3">
+                                <div>
+                                  <Label htmlFor="usdtAddress" className="text-gray-700 dark:text-gray-300">USDT Wallet Address</Label>
+                                  <Input
+                                    id="usdtAddress"
+                                    placeholder="TRC20 or ERC20 address"
+                                    className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="usdtNetwork" className="text-gray-700 dark:text-gray-300">Network</Label>
+                                  <Select defaultValue="trc20">
+                                    <SelectTrigger className="w-full bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]">
+                                      <span>TRC20</span>
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                                      <SelectItem value="trc20" className="text-gray-900 dark:text-[#ececf1]">TRC20</SelectItem>
+                                      <SelectItem value="erc20" className="text-gray-900 dark:text-[#ececf1]">ERC20</SelectItem>
+                                      <SelectItem value="bep20" className="text-gray-900 dark:text-[#ececf1]">BEP20</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               </div>
                             )}
                           </div>
