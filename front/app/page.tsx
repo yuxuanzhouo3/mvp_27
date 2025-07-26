@@ -93,6 +93,12 @@ import {
   AlertTriangle,
   RefreshCw,
   Receipt,
+  Smartphone,
+  Monitor,
+  Laptop,
+  Tablet,
+  XCircle,
+  Chrome,
 } from "lucide-react"
 
 const mornGPTCategories = [
@@ -375,10 +381,17 @@ export default function MornGPTHomepage() {
   const [showLogoutConfirmDialog, setShowLogoutConfirmDialog] = useState(false)
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false)
+  const [showFontDialog, setShowFontDialog] = useState(false)
+  const [showShortcutDialog, setShowShortcutDialog] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [userProfileForm, setUserProfileForm] = useState({
     name: ""
   })
+  
+  // Download section and ads state
+  const [showDownloadSection, setShowDownloadSection] = useState(false)
+  const [adsEnabled, setAdsEnabled] = useState(true)
+  const [selectedPlatform, setSelectedPlatform] = useState<{platform: string, variant?: string} | null>(null)
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -1246,6 +1259,74 @@ export default function MornGPTHomepage() {
     return text.slice(0, maxLength) + "..."
   }
 
+  // Download helper functions
+  const handleDownload = () => {
+    if (!selectedPlatform) return
+    
+    // Simulate download for different platforms and variants
+    const downloadUrls = {
+      ios: "https://apps.apple.com/app/morngpt",
+      android: "https://play.google.com/store/apps/details?id=com.morngpt.app",
+      chrome: "https://chrome.google.com/webstore/detail/morngpt",
+      firefox: "https://addons.mozilla.org/en-US/firefox/addon/morngpt",
+      edge: "https://microsoftedge.microsoft.com/addons/detail/morngpt",
+      opera: "https://addons.opera.com/en/extensions/details/morngpt",
+      safari: "https://apps.apple.com/app/morngpt-safari-extension",
+      macos: {
+        intel: "https://morngpt.com/downloads/morngpt-macos-intel.dmg",
+        m: "https://morngpt.com/downloads/morngpt-macos-m.dmg"
+      },
+      windows: {
+        x64: "https://morngpt.com/downloads/morngpt-windows-x64.exe",
+        arm64: "https://morngpt.com/downloads/morngpt-windows-arm64.exe",
+        x86: "https://morngpt.com/downloads/morngpt-windows-x86.exe"
+      },
+      linux: {
+        deb: "https://morngpt.com/downloads/morngpt-linux.deb",
+        appimage: "https://morngpt.com/downloads/morngpt-linux.AppImage",
+        snap: "https://snapcraft.io/morngpt",
+        flatpak: "https://flathub.org/apps/com.morngpt.app",
+        aur: "https://aur.archlinux.org/packages/morngpt"
+      },
+
+    }
+    
+    let url: string | undefined
+    
+    if (selectedPlatform.platform === 'macos' && selectedPlatform.variant) {
+      url = downloadUrls.macos[selectedPlatform.variant as keyof typeof downloadUrls.macos]
+               } else if (selectedPlatform.platform === 'windows' && selectedPlatform.variant) {
+             url = downloadUrls.windows[selectedPlatform.variant as keyof typeof downloadUrls.windows]
+           } else if (selectedPlatform.platform === 'linux' && selectedPlatform.variant) {
+             url = downloadUrls.linux[selectedPlatform.variant as keyof typeof downloadUrls.linux]
+           } else {
+      url = downloadUrls[selectedPlatform.platform as keyof typeof downloadUrls] as string
+    }
+    
+    if (url) {
+      window.open(url, '_blank')
+    }
+    
+    // Close the download dialog and reset selection
+    setShowDownloadSection(false)
+    setSelectedPlatform(null)
+  }
+
+  const handlePlatformSelect = (platform: string, variant?: string) => {
+    // If clicking the same platform/variant, deselect it
+    if (selectedPlatform?.platform === platform && selectedPlatform?.variant === variant) {
+      setSelectedPlatform(null)
+    } else {
+      // Otherwise, select the new platform/variant
+      setSelectedPlatform({ platform, variant })
+    }
+  }
+
+  const handleUpgradeFromAds = () => {
+    setShowDownloadSection(false)
+    setShowUpgradeDialog(true)
+  }
+
   return (
     <div className={`min-h-screen ${isDarkMode ? "dark" : ""}`}>
       <div className="min-h-screen bg-gray-50 dark:bg-[#2d2d30] text-gray-900 dark:text-[#ececf1] flex">
@@ -1264,6 +1345,38 @@ export default function MornGPTHomepage() {
             >
               <Menu className="w-4 h-4" />
             </Button>
+            
+            {/* Download Section */}
+            <div className="flex flex-col items-center space-y-2 px-1 pt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDownloadSection(!showDownloadSection)}
+                className="w-10 h-10 rounded-lg text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                title="Download Apps"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            {/* Ads Toggle (only for non-pro users) */}
+            {appUser && !appUser.isPro && (
+              <div className="px-1 pb-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAdsEnabled(!adsEnabled)}
+                  className={`w-10 h-10 rounded-lg ${
+                    adsEnabled 
+                      ? "text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]" 
+                      : "text-gray-400 dark:text-gray-500"
+                  }`}
+                  title={adsEnabled ? "Hide Ads" : "Show Ads"}
+                >
+                  {adsEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -2573,15 +2686,15 @@ export default function MornGPTHomepage() {
 
         {/* Settings Dialog */}
         <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
-          <DialogContent className="sm:max-w-3xl max-h-[70vh] bg-gradient-to-br from-white to-gray-50 dark:from-[#40414f] dark:to-[#2d2d30] border-gray-200 dark:border-[#565869] shadow-2xl">
+          <DialogContent className="sm:max-w-lg max-h-[80vh] bg-gradient-to-br from-white to-gray-50 dark:from-[#40414f] dark:to-[#2d2d30] border-gray-200 dark:border-[#565869] shadow-2xl">
                           <DialogHeader className="pb-4">
-              </DialogHeader>
+            </DialogHeader>
                           <div className="space-y-1 py-1">
               {/* Username Section - Moved Up */}
               {isEditingProfile && (
                 <div className="bg-white dark:bg-[#40414f] rounded-xl p-4 border border-gray-100 dark:border-[#565869] shadow-sm">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                <div className="flex-1">
                       <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Username</Label>
                       <Input
                         id="name"
@@ -2590,7 +2703,7 @@ export default function MornGPTHomepage() {
                         className="mt-1 bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter username"
                       />
-                    </div>
+                </div>
                     <div className="flex flex-col space-y-1 ml-4">
                       <Button
                         size="sm"
@@ -2599,15 +2712,15 @@ export default function MornGPTHomepage() {
                       >
                         Save
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                <Button
+                  variant="outline"
+                  size="sm"
                         className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm"
                         onClick={cancelEditingProfile}
-                      >
+                >
                         Cancel
-                      </Button>
-                    </div>
+                </Button>
+              </div>
                   </div>
                 </div>
               )}
@@ -2615,185 +2728,196 @@ export default function MornGPTHomepage() {
 
 
               {/* 5 Organized Settings Sections - 2 Column Layout - Compact */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* 1. Appearance & Notifications - Combined */}
+              <div className="flex flex-col space-y-2">
+                {/* Account Section - Outside */}
                 <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
-                  <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center mb-2 text-xs">
-                    <div className="p-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg mr-1.5">
-                      <PaletteIcon className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm text-gray-700 dark:text-gray-300">Account</Label>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Your profile & subscription</p>
                     </div>
-                    Appearance & Notifications
-                  </h4>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-900 dark:text-[#ececf1]">{appUser?.email}</span>
+                      <div className="w-4 h-4 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-gray-600 dark:text-gray-300">
+                          {appUser?.isPro ? "P" : "F"}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-6 h-6 p-0 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
+                        onClick={() => setShowUpgradeDialog(true)}
+                      >
+                        <Crown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Settings Section */}
+                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-700 dark:text-gray-300">Account</Label>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-900 dark:text-[#ececf1]">{appUser?.email}</span>
-                        <div className="w-4 h-4 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                            {appUser?.isPro ? "P" : "F"}
-                          </span>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-6 h-6 p-0 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
-                          onClick={() => setShowUpgradeDialog(true)}
-                        >
-                          <Crown className="w-3 h-3" />
-                        </Button>
+                      <div>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Theme</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-700 dark:text-gray-300">Dark Mode</Label>
-                      <Switch checked={isDarkMode} onCheckedChange={toggleTheme} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-700 dark:text-gray-300">Language</Label>
-                      <Select defaultValue="en">
-                        <SelectTrigger className="w-16 h-6 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
-                          <span className="text-xs">EN</span>
+                      <Select defaultValue={isDarkMode ? "dark" : "light"} onValueChange={(value) => {
+                        if (value === "light" || value === "dark") {
+                          setIsDarkMode(value === "dark")
+                        }
+                      }}>
+                        <SelectTrigger className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                          <span className="text-xs">{isDarkMode ? "Dark" : "Light"}</span>
                         </SelectTrigger>
                         <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
-                          <SelectItem value="en" className="text-xs text-gray-900 dark:text-[#ececf1]">English</SelectItem>
-                          <SelectItem value="es" className="text-xs text-gray-900 dark:text-[#ececf1]">Español</SelectItem>
-                          <SelectItem value="fr" className="text-xs text-gray-900 dark:text-[#ececf1]">Français</SelectItem>
+                          <SelectItem value="light" className="text-xs text-gray-900 dark:text-[#ececf1]">Light</SelectItem>
+                          <SelectItem value="dark" className="text-xs text-gray-900 dark:text-[#ececf1]">Dark</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-700 dark:text-gray-300">Push Notifications</Label>
-                      <Switch
-                        checked={appUser?.settings?.notifications}
-                        onCheckedChange={(checked) => updateUserSettings({ notifications: checked })}
-                      />
+                      <div>
+                      <Label className="text-sm text-gray-700 dark:text-gray-300">Language</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred language</p>
+                      </div>
+                      <Select defaultValue="en" onValueChange={(value) => {
+                        // Handle language change
+                        console.log("Language changed to:", value)
+                      }}>
+                        <SelectTrigger className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                          <span className="text-xs">EN</span>
+                        </SelectTrigger>
+                        <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                          <SelectItem value="en" className="text-xs text-gray-900 dark:text-[#ececf1]">English</SelectItem>
+                          <SelectItem value="zh" className="text-xs text-gray-900 dark:text-[#ececf1]">中文 (Chinese)</SelectItem>
+                          <SelectItem value="es" className="text-xs text-gray-900 dark:text-[#ececf1]">Español (Spanish)</SelectItem>
+                          <SelectItem value="fr" className="text-xs text-gray-900 dark:text-[#ececf1]">Français (French)</SelectItem>
+                          <SelectItem value="de" className="text-xs text-gray-900 dark:text-[#ececf1]">Deutsch (German)</SelectItem>
+                          <SelectItem value="ja" className="text-xs text-gray-900 dark:text-[#ececf1]">日本語 (Japanese)</SelectItem>
+                          <SelectItem value="ko" className="text-xs text-gray-900 dark:text-[#ececf1]">한국어 (Korean)</SelectItem>
+                          <SelectItem value="pt" className="text-xs text-gray-900 dark:text-[#ececf1]">Português (Portuguese)</SelectItem>
+                          <SelectItem value="ru" className="text-xs text-gray-900 dark:text-[#ececf1]">Русский (Russian)</SelectItem>
+                          <SelectItem value="ar" className="text-xs text-gray-900 dark:text-[#ececf1]">العربية (Arabic)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-700 dark:text-gray-300">Sound Effects</Label>
-                      <Switch
-                        checked={appUser?.settings?.soundEnabled}
-                        onCheckedChange={(checked) => updateUserSettings({ soundEnabled: checked })}
-                      />
-                    </div>
+                      <div>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Font Family</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred font</p>
                   </div>
+                      <Select defaultValue="arial" onValueChange={(value) => {
+                        // Handle font family change
+                        console.log("Font family changed to:", value)
+                      }}>
+                        <SelectTrigger className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                          <span className="text-xs">Arial</span>
+                        </SelectTrigger>
+                        <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                          <SelectItem value="arial" className="text-xs text-gray-900 dark:text-[#ececf1]">Arial</SelectItem>
+                          <SelectItem value="helvetica" className="text-xs text-gray-900 dark:text-[#ececf1]">Helvetica</SelectItem>
+                          <SelectItem value="times" className="text-xs text-gray-900 dark:text-[#ececf1]">Times New Roman</SelectItem>
+                          <SelectItem value="georgia" className="text-xs text-gray-900 dark:text-[#ececf1]">Georgia</SelectItem>
+                          <SelectItem value="verdana" className="text-xs text-gray-900 dark:text-[#ececf1]">Verdana</SelectItem>
+                          <SelectItem value="courier" className="text-xs text-gray-900 dark:text-[#ececf1]">Courier New</SelectItem>
+                        </SelectContent>
+                      </Select>
                 </div>
-
-                {/* 3. Manage Billing */}
-                <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center text-xs">
-                      <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-1.5">
-                        <CreditCard className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      Billing
-                  </h4>
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-[#1e3a8a] dark:to-[#3730a3] rounded-lg border border-blue-100 dark:border-blue-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="text-xs font-medium text-gray-900 dark:text-white">Current Plan</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">Free Plan</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs bg-white dark:bg-[#40414f]">Active</Badge>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Font Size</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred size</p>
+                    </div>
+                      <Select defaultValue="14" onValueChange={(value) => {
+                        // Handle font size change
+                        console.log("Font size changed to:", value)
+                      }}>
+                        <SelectTrigger className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                          <span className="text-xs">14px</span>
+                        </SelectTrigger>
+                        <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                          <SelectItem value="12" className="text-xs text-gray-900 dark:text-[#ececf1]">12px</SelectItem>
+                          <SelectItem value="14" className="text-xs text-gray-900 dark:text-[#ececf1]">14px</SelectItem>
+                          <SelectItem value="16" className="text-xs text-gray-900 dark:text-[#ececf1]">16px</SelectItem>
+                          <SelectItem value="18" className="text-xs text-gray-900 dark:text-[#ececf1]">18px</SelectItem>
+                          <SelectItem value="20" className="text-xs text-gray-900 dark:text-[#ececf1]">20px</SelectItem>
+                          <SelectItem value="24" className="text-xs text-gray-900 dark:text-[#ececf1]">24px</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {appUser?.isPro && (
                     <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-gray-900 dark:text-white">Next Billing</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">No active subscription</p>
-                        </div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      </div>
+                          <Label className="text-sm text-gray-700 dark:text-gray-300">Ad-Free Experience</Label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Premium feature for Pro users</p>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700 shadow-sm"
-                      onClick={() => setShowBillingDialog(true)}
+                          className="w-32 h-7 bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700"
                     >
-                      <CreditCard className="w-4 h-4 mr-1" />
-                      Manage Billing
+                          <span className="text-xs">Turn Off Ads</span>
                     </Button>
                   </div>
-                </div>
+                    )}
 
-                {/* 4. Privacy & Security */}
-                <div className="bg-white dark:bg-[#40414f] rounded-lg p-4 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center text-xs">
-                      <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-lg mr-1.5">
-                        <ShieldIcon className="w-3 h-3 text-red-600 dark:text-red-400" />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Shortcut</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Keyboard shortcuts & hotkeys</p>
                       </div>
-                      Privacy
-                  </h4>
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="p-3 bg-gradient-to-r from-red-50 to-pink-50 dark:from-[#7f1d1d] dark:to-[#831843] rounded-lg border border-red-100 dark:border-red-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="text-xs font-medium text-gray-900 dark:text-white">Password</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">Last changed: 30 days ago</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs bg-white dark:bg-[#40414f]">Secure</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-gray-900 dark:text-white">2FA Status</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">Not enabled</p>
-                        </div>
-                        <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                      </div>
-                    </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowPrivacyDialog(true)}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700 shadow-sm"
+                        className="w-32 h-7 bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-600 hover:border-yellow-700"
+                        onClick={() => setShowShortcutDialog(true)}
                     >
-                      <ShieldIcon className="w-4 h-4 mr-1" />
-                      Privacy Settings
+                        <span className="text-xs">Enabled</span>
                     </Button>
-                </div>
-              </div>
-
-                {/* 5. Help & Support */}
-                <div className="bg-white dark:bg-[#40414f] rounded-lg p-4 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-gray-900 dark:text-[#ececf1] flex items-center text-xs">
-                      <div className="p-1 bg-orange-100 dark:bg-orange-900/30 rounded-lg mr-1.5">
-                        <HelpCircle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
-                      </div>
-                      Support
-                    </h4>
-                    <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="p-3 bg-gradient-to-r from-orange-50 to-red-50 dark:from-[#7c2d12] dark:to-[#991b1b] rounded-lg border border-orange-100 dark:border-orange-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="text-xs font-medium text-gray-900 dark:text-white">Response Time</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">Usually within 24 hours</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs bg-white dark:bg-[#40414f]">Fast</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-gray-900 dark:text-white">Support Hours</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-300">24/7 available</p>
-                        </div>
-                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      </div>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Billing</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Manage subscription & payments</p>
+                      </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                        className="w-32 h-7 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 hover:border-blue-700"
+                        onClick={() => setShowBillingDialog(true)}
+                    >
+                        <span className="text-xs">Manage</span>
+                    </Button>
+                  </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Privacy</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Security & account protection</p>
+                </div>
                   <Button
                     variant="outline"
                     size="sm"
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white border-orange-600 hover:border-orange-700 shadow-sm"
+                        className="w-32 h-7 bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
+                        onClick={() => setShowPrivacyDialog(true)}
                   >
-                      <MessageSquare className="w-4 h-4 mr-1" />
-                      Contact Support
+                        <span className="text-xs">Settings</span>
                   </Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm text-gray-700 dark:text-gray-300">Support</Label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Get help & contact us</p>
+                      </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                        className="w-32 h-7 bg-orange-600 hover:bg-orange-700 text-white border-orange-600 hover:border-orange-700"
+                  >
+                        <span className="text-xs">Contact</span>
+                  </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3039,7 +3163,7 @@ export default function MornGPTHomepage() {
                   Delete Account
                           </Button>
                         </div>
-            </div>
+                      </div>
           </DialogContent>
         </Dialog>
 
@@ -3050,7 +3174,7 @@ export default function MornGPTHomepage() {
               <DialogTitle className="flex items-center space-x-2 text-lg font-bold text-gray-900 dark:text-[#ececf1]">
                 <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg">
                   <ShieldIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        </div>
+                    </div>
                 <span>Privacy & Security</span>
               </DialogTitle>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -3068,7 +3192,7 @@ export default function MornGPTHomepage() {
                 
                 {/* Change Password */}
                 <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-sm">
                         <Lock className="w-4 h-4 text-white" />
@@ -3081,14 +3205,14 @@ export default function MornGPTHomepage() {
                     </div>
                     </div>
                         <Button
-                      size="sm"
+                          size="sm"
                           variant="outline"
                       className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
                         >
                       Update
                         </Button>
                   </div>
-                </div>
+                      </div>
 
                 {/* 2FA Method */}
                 <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
@@ -3096,14 +3220,14 @@ export default function MornGPTHomepage() {
                     <div className="flex items-center space-x-2">
                       <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-sm">
                         <ShieldIcon className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
+                        </div>
+                        <div>
                         <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Two-Factor Authentication</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Status: <span className="text-orange-500 font-medium">Not enabled</span>
                         </p>
-                      </div>
-                    </div>
+                        </div>
+                        </div>
                           <Button
                       size="sm"
                             variant="outline"
@@ -3111,9 +3235,9 @@ export default function MornGPTHomepage() {
                         >
                       Enable
                         </Button>
+                        </div>
                       </div>
-                    </div>
-              </div>
+                      </div>
 
               {/* Privacy Section */}
                       <div className="space-y-3">
@@ -3125,28 +3249,28 @@ export default function MornGPTHomepage() {
                 {/* Data Export */}
                 <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-2">
                       <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                          </div>
+                              </div>
                       <div>
                         <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Export Data</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Download your personal data
                         </p>
-                        </div>
+                              </div>
                     </div>
-                    <Button
+                          <Button
                       size="sm"
-                      variant="outline"
+                            variant="outline"
                       className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
-                    >
+                          >
                       Export
-                    </Button>
-                      </div>
-                    </div>
+                          </Button>
+                        </div>
+                        </div>
 
                 {/* Activity Log */}
                 <div className="bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow">
@@ -3156,21 +3280,21 @@ export default function MornGPTHomepage() {
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
-                          </div>
+                        </div>
                       <div>
                         <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Activity Log</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           View your account activity
                         </p>
-                        </div>
+                    </div>
                           </div>
-                    <Button
+                        <Button
                       size="sm"
-                      variant="outline"
+                          variant="outline"
                       className="bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869] shadow-sm text-xs"
-                    >
+                        >
                       View
-                    </Button>
+                        </Button>
                         </div>
                       </div>
                     </div>
@@ -3206,7 +3330,7 @@ export default function MornGPTHomepage() {
                       className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 bg-white dark:bg-[#40414f] shadow-sm text-xs"
                     >
                       Delete
-                        </Button>
+                          </Button>
                       </div>
                     </div>
             </div>
@@ -3271,9 +3395,9 @@ export default function MornGPTHomepage() {
                         </p>
                       </div>
                     </div>
-                <Button
+                        <Button
                       size="sm"
-                  variant="outline"
+                          variant="outline"
                   onClick={() => {
                         if (appUser?.isPro) {
                           setShowPaymentEditDialog(true)
@@ -3287,15 +3411,15 @@ export default function MornGPTHomepage() {
                 >
                       <Edit3 className="w-4 h-4 mr-2" />
                       Edit
-                </Button>
-              </div>
+                        </Button>
+                      </div>
                   
                   {appUser?.isPro ? (
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2 p-2 bg-white dark:bg-[#565869] rounded border">
                         <div className="w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
                           <CreditCard className="w-3 h-3 text-gray-600 dark:text-gray-400" />
-            </div>
+                    </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
                             Visa ending in 4242
@@ -3327,19 +3451,19 @@ export default function MornGPTHomepage() {
                     <div className="flex items-center space-x-3 mb-3">
                       <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
                         <Receipt className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      </div>
+                          </div>
                       <div>
                         <p className="font-medium text-gray-900 dark:text-[#ececf1]">Billing Information</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           Your billing details and history
                         </p>
+                        </div>
                       </div>
-                    </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Next billing date:</span>
                         <span className="text-gray-900 dark:text-[#ececf1]">March 15, 2025</span>
-                      </div>
+                    </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Amount:</span>
                         <span className="text-gray-900 dark:text-[#ececf1]">$19.99/month</span>
@@ -3367,9 +3491,9 @@ export default function MornGPTHomepage() {
                               <span>Edit Payment Method</span>
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+                    <div className="space-y-4">
                             {/* Payment Method Options */}
-                            <div className="space-y-3">
+                      <div className="space-y-3">
                               <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
                                 <input
                                   type="radio"
@@ -3382,7 +3506,7 @@ export default function MornGPTHomepage() {
                                 />
                                 <CreditCard className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                                 <label htmlFor="card" className="text-gray-900 dark:text-[#ececf1]">Credit/Debit Card</label>
-              </div>
+                          </div>
                               
                               <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
                                 <input
@@ -3396,7 +3520,7 @@ export default function MornGPTHomepage() {
                                 />
                                 <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">P</div>
                                 <label htmlFor="paypal" className="text-gray-900 dark:text-[#ececf1]">PayPal</label>
-                              </div>
+                        </div>
                               
                               <div className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-[#565869] rounded-lg">
                                 <input
@@ -3410,12 +3534,12 @@ export default function MornGPTHomepage() {
                                 />
                                 <div className="w-5 h-5 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold">W</div>
                                 <label htmlFor="wechat" className="text-gray-900 dark:text-[#ececf1]">WeChat Pay</label>
-                              </div>
-                            </div>
+                      </div>
+                    </div>
 
                             {/* Card Details (if card is selected) */}
                             {paymentMethod.type === "card" && (
-                              <div className="space-y-3">
+                      <div className="space-y-3">
                                 <div>
                                   <Label htmlFor="cardNumber" className="text-gray-700 dark:text-gray-300">Card Number</Label>
                                   <Input
@@ -3423,7 +3547,7 @@ export default function MornGPTHomepage() {
                                     placeholder="1234 5678 9012 3456"
                                     className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
                                   />
-                                </div>
+                          </div>
                                 <div className="grid grid-cols-2 gap-3">
                                   <div>
                                     <Label htmlFor="expiry" className="text-gray-700 dark:text-gray-300">Expiry Date</Label>
@@ -3431,8 +3555,8 @@ export default function MornGPTHomepage() {
                                       id="expiry"
                                       placeholder="MM/YY"
                                       className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
-                                    />
-                                  </div>
+                          />
+                        </div>
                                   <div>
                                     <Label htmlFor="cvv" className="text-gray-700 dark:text-gray-300">CVV</Label>
                                     <Input
@@ -3440,8 +3564,8 @@ export default function MornGPTHomepage() {
                                       placeholder="123"
                                       className="bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
                                     />
-                                  </div>
-                                </div>
+                      </div>
+                    </div>
                               </div>
                             )}
 
@@ -3460,14 +3584,14 @@ export default function MornGPTHomepage() {
                             )}
                           </div>
                           <DialogFooter className="flex space-x-2">
-                <Button
-                  variant="outline"
+                          <Button
+                            variant="outline"
                               onClick={() => setShowPaymentEditDialog(false)}
                               className="border-gray-300 dark:border-[#565869]"
-                >
+                          >
                   Cancel
-                </Button>
-                <Button
+                          </Button>
+                        <Button
                               onClick={() => {
                                 // Here you would save the payment method
                                 console.log("Payment method updated:", paymentMethod)
@@ -3476,8 +3600,524 @@ export default function MornGPTHomepage() {
                               className="bg-blue-600 hover:bg-blue-700"
                 >
                               Save Changes
-                </Button>
+                        </Button>
                           </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Font Settings Dialog */}
+        <Dialog open={showFontDialog} onOpenChange={setShowFontDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <PaletteIcon className="w-5 h-5 text-purple-600" />
+                <span>Font Settings</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-gray-700 dark:text-gray-300">Font Family</Label>
+                <Select defaultValue="default">
+                  <SelectTrigger className="w-full bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]">
+                    <span>Default</span>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                    <SelectItem value="default" className="text-gray-900 dark:text-[#ececf1]">Default</SelectItem>
+                    <SelectItem value="arial" className="text-gray-900 dark:text-[#ececf1]">Arial</SelectItem>
+                    <SelectItem value="times" className="text-gray-900 dark:text-[#ececf1]">Times New Roman</SelectItem>
+                    <SelectItem value="mono" className="text-gray-900 dark:text-[#ececf1]">Monospace</SelectItem>
+                    <SelectItem value="serif" className="text-gray-900 dark:text-[#ececf1]">Serif</SelectItem>
+                    <SelectItem value="sans" className="text-gray-900 dark:text-[#ececf1]">Sans Serif</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700 dark:text-gray-300">Font Size</Label>
+                <Select defaultValue="14">
+                  <SelectTrigger className="w-full bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]">
+                    <span>14px</span>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                    <SelectItem value="12" className="text-gray-900 dark:text-[#ececf1]">12px</SelectItem>
+                    <SelectItem value="14" className="text-gray-900 dark:text-[#ececf1]">14px</SelectItem>
+                    <SelectItem value="16" className="text-gray-900 dark:text-[#ececf1]">16px</SelectItem>
+                    <SelectItem value="18" className="text-gray-900 dark:text-[#ececf1]">18px</SelectItem>
+                    <SelectItem value="20" className="text-gray-900 dark:text-[#ececf1]">20px</SelectItem>
+                    <SelectItem value="24" className="text-gray-900 dark:text-[#ececf1]">24px</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                  onClick={() => setShowFontDialog(false)}
+                  className="flex-1 border-gray-300 dark:border-[#565869]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    console.log("Font settings saved")
+                    setShowFontDialog(false)
+                  }}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  Save
+                        </Button>
+                      </div>
+                    </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Shortcut Settings Dialog */}
+        <Dialog open={showShortcutDialog} onOpenChange={setShowShortcutDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Zap className="w-5 h-5 text-yellow-600" />
+                <span>Keyboard Shortcuts</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-[#ececf1]">Send Message</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Send current message</p>
+                  </div>
+                  <Badge variant="outline" className="bg-white dark:bg-[#40414f]">⌘ + Enter</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-[#ececf1]">New Chat</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Start a new conversation</p>
+                  </div>
+                  <Badge variant="outline" className="bg-white dark:bg-[#40414f]">⌘ + N</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-[#ececf1]">Toggle Theme</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Switch between light/dark</p>
+                  </div>
+                  <Badge variant="outline" className="bg-white dark:bg-[#40414f]">⌘ + T</Badge>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-gray-700 dark:text-gray-300">Enable Shortcuts</Label>
+                <Switch defaultChecked />
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowShortcutDialog(false)}
+                  className="flex-1 border-gray-300 dark:border-[#565869]"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    console.log("Shortcut settings saved")
+                    setShowShortcutDialog(false)
+                  }}
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Download Section Dialog */}
+        <Dialog open={showDownloadSection} onOpenChange={setShowDownloadSection}>
+          <DialogContent className="sm:max-w-2xl max-h-screen overflow-y-auto bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Download className="w-5 h-5 text-blue-600" />
+                <span>Download MornGPT</span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Platform Downloads */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Select Your Platform</h3>
+                
+                {/* Selected Platform Display */}
+                {selectedPlatform && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                          {selectedPlatform.platform.toUpperCase()}
+                          {selectedPlatform.variant && ` - ${selectedPlatform.variant.toUpperCase()}`}
+                        </p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          Ready to download
+                        </p>
+                      </div>
+                                       <Button 
+                   size="sm" 
+                   className="bg-blue-600 hover:bg-blue-700"
+                   onClick={handleDownload}
+                 >
+                   {selectedPlatform && ['chrome', 'firefox', 'edge', 'opera', 'safari'].includes(selectedPlatform.platform) ? 'Install Now' : 'Download Now'}
+                 </Button>
+                    </div>
+                  </div>
+                )}
+                
+                                {/* Mobile Apps */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300">Mobile Apps</h4>
+                  
+                  <div className="p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <Smartphone className="w-4 h-4 text-purple-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Mobile</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">iOS & Android</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className={`text-xs h-7 px-2 ${selectedPlatform?.platform === 'ios' || selectedPlatform?.platform === 'android' ? 'bg-purple-700 border-2 border-purple-300' : 'bg-purple-600 hover:bg-purple-700'}`}
+                        onClick={() => {
+                          if (selectedPlatform?.platform === 'ios' || selectedPlatform?.platform === 'android') {
+                            setSelectedPlatform(null)
+                          } else {
+                            handlePlatformSelect('ios')
+                          }
+                        }}
+                      >
+                        {selectedPlatform?.platform === 'ios' || selectedPlatform?.platform === 'android' ? 'Selected' : 'Select'}
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        iOS 14.0+ • Android 8.0+ • 45-50MB
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'ios' ? 'bg-purple-100 border-purple-300' : ''}`}
+                          onClick={() => handlePlatformSelect('ios')}
+                        >
+                          iOS
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'android' ? 'bg-purple-100 border-purple-300' : ''}`}
+                          onClick={() => handlePlatformSelect('android')}
+                        >
+                          Android
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop Apps */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300">Desktop Apps</h4>
+                  
+                  {/* macOS */}
+                  <div className="p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <Monitor className="w-4 h-4 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">macOS</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Desktop App</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className={`text-xs h-7 px-2 ${selectedPlatform?.platform === 'macos' ? 'bg-gray-700 border-2 border-gray-300' : 'bg-gray-600 hover:bg-gray-700'}`}
+                        onClick={() => {
+                          if (selectedPlatform?.platform === 'macos') {
+                            setSelectedPlatform(null)
+                          } else {
+                            handlePlatformSelect('macos', 'intel')
+                          }
+                        }}
+                      >
+                        {selectedPlatform?.platform === 'macos' ? 'Selected' : 'Select'}
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        macOS 11.0+ • 65MB
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'macos' && selectedPlatform?.variant === 'intel' ? 'bg-blue-100 border-blue-300' : ''}`}
+                          onClick={() => handlePlatformSelect('macos', 'intel')}
+                        >
+                          Intel
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'macos' && selectedPlatform?.variant === 'm' ? 'bg-blue-100 border-blue-300' : ''}`}
+                          onClick={() => handlePlatformSelect('macos', 'm')}
+                        >
+                          M Series
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Windows */}
+                  <div className="p-2 bg-gray-50 dark:bg-[#565869] rounded-lg min-w-[340px]">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <Laptop className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Windows</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Desktop App</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className={`text-xs h-7 px-2 ${selectedPlatform?.platform === 'windows' ? 'bg-blue-700 border-2 border-blue-300' : 'bg-blue-600 hover:bg-blue-700'}`}
+                        onClick={() => {
+                          if (selectedPlatform?.platform === 'windows') {
+                            setSelectedPlatform(null)
+                          } else {
+                            handlePlatformSelect('windows', 'x64')
+                          }
+                        }}
+                      >
+                        {selectedPlatform?.platform === 'windows' ? 'Selected' : 'Select'}
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Windows 10+ • 60MB
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'windows' && selectedPlatform?.variant === 'x64' ? 'bg-blue-100 border-blue-300' : ''}`}
+                          onClick={() => handlePlatformSelect('windows', 'x64')}
+                        >
+                          x64
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'windows' && selectedPlatform?.variant === 'x86' ? 'bg-blue-100 border-blue-300' : ''}`}
+                          onClick={() => handlePlatformSelect('windows', 'x86')}
+                        >
+                          x86
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'windows' && selectedPlatform?.variant === 'arm64' ? 'bg-blue-100 border-blue-300' : ''}`}
+                          onClick={() => handlePlatformSelect('windows', 'arm64')}
+                        >
+                          ARM64
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Linux */}
+                  <div className="p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <Monitor className="w-4 h-4 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Linux</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">Desktop App</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className={`text-xs h-7 px-2 ${selectedPlatform?.platform === 'linux' ? 'bg-green-700 border-2 border-green-300' : 'bg-green-600 hover:bg-green-700'}`}
+                        onClick={() => {
+                          if (selectedPlatform?.platform === 'linux') {
+                            setSelectedPlatform(null)
+                          } else {
+                            handlePlatformSelect('linux', 'deb')
+                          }
+                        }}
+                      >
+                        {selectedPlatform?.platform === 'linux' ? 'Selected' : 'Select'}
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Ubuntu 20.04+ • 55MB
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'linux' && selectedPlatform?.variant === 'deb' ? 'bg-green-100 border-green-300' : ''}`}
+                          onClick={() => handlePlatformSelect('linux', 'deb')}
+                        >
+                          .deb
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'linux' && selectedPlatform?.variant === 'appimage' ? 'bg-green-100 border-green-300' : ''}`}
+                          onClick={() => handlePlatformSelect('linux', 'appimage')}
+                        >
+                          AppImage
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'linux' && selectedPlatform?.variant === 'snap' ? 'bg-green-100 border-green-300' : ''}`}
+                          onClick={() => handlePlatformSelect('linux', 'snap')}
+                        >
+                          Snap
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'linux' && selectedPlatform?.variant === 'flatpak' ? 'bg-green-100 border-green-300' : ''}`}
+                          onClick={() => handlePlatformSelect('linux', 'flatpak')}
+                        >
+                          Flatpak
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'linux' && selectedPlatform?.variant === 'aur' ? 'bg-green-100 border-green-300' : ''}`}
+                          onClick={() => handlePlatformSelect('linux', 'aur')}
+                        >
+                          AUR
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Browser Extensions */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300">Browser Extensions</h4>
+                  
+                  <div className="p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <Globe className="w-4 h-4 text-indigo-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Browser Extensions</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">All Major Browsers</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className={`text-xs h-7 px-2 ${selectedPlatform && ['chrome', 'firefox', 'edge', 'opera', 'safari'].includes(selectedPlatform.platform) ? 'bg-indigo-700 border-2 border-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                        onClick={() => {
+                          if (selectedPlatform && ['chrome', 'firefox', 'edge', 'opera', 'safari'].includes(selectedPlatform.platform)) {
+                            setSelectedPlatform(null)
+                          } else {
+                            handlePlatformSelect('chrome')
+                          }
+                        }}
+                      >
+                        {selectedPlatform && ['chrome', 'firefox', 'edge', 'opera', 'safari'].includes(selectedPlatform.platform) ? 'Selected' : 'Select'}
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Free • All Major Browsers
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'chrome' ? 'bg-indigo-100 border-indigo-300' : ''}`}
+                          onClick={() => handlePlatformSelect('chrome')}
+                        >
+                          Chrome
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'firefox' ? 'bg-indigo-100 border-indigo-300' : ''}`}
+                          onClick={() => handlePlatformSelect('firefox')}
+                        >
+                          Firefox
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'edge' ? 'bg-indigo-100 border-indigo-300' : ''}`}
+                          onClick={() => handlePlatformSelect('edge')}
+                        >
+                          Edge
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'opera' ? 'bg-indigo-100 border-indigo-300' : ''}`}
+                          onClick={() => handlePlatformSelect('opera')}
+                        >
+                          Opera
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className={`text-xs h-5 px-1 ${selectedPlatform?.platform === 'safari' ? 'bg-indigo-100 border-indigo-300' : ''}`}
+                          onClick={() => handlePlatformSelect('safari')}
+                        >
+                          Safari
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ads Section (only for non-pro users) */}
+              {appUser && !appUser.isPro && (
+                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-[#565869]">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Advertisement</h3>
+                    <Switch 
+                      checked={adsEnabled} 
+                      onCheckedChange={setAdsEnabled}
+                    />
+                  </div>
+                  {adsEnabled && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Crown className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Upgrade to Pro</span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                        Remove ads and unlock premium features
+                      </p>
+                      <Button size="sm" className="w-full bg-yellow-600 hover:bg-yellow-700" onClick={handleUpgradeFromAds}>
+                        Upgrade Now
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex space-x-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDownloadSection(false)}
+                  className="flex-1 border-gray-300 dark:border-[#565869]"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
