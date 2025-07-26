@@ -3337,20 +3337,7 @@ export default function MornGPTHomepage() {
                         <div className="border-t border-gray-200 dark:border-[#565869] pt-3">
                           <div className="space-y-2">
                             <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                                  <Shield className="w-4 h-4 text-red-600 dark:text-red-400" />
-                                </div>
-                                <div>
-                                  <h5 className="font-medium text-red-900 dark:text-red-100 text-xs">Delete Account</h5>
-                                  <p className="text-xs text-red-700 dark:text-red-300">Permanent account removal with 90-day restoration</p>
-                                </div>
-                              </div>
-                              <p className="text-xs text-red-700 dark:text-red-300 mb-2 leading-tight">
-                                This action will permanently delete your account and all associated data. 
-                                You'll need to complete 2FA verification and write a confirmation phrase. 
-                                Your data will be stored for 90 days for potential restoration.
-                              </p>
+
                               <div className="flex space-x-2">
                                 <Button
                                   variant="outline"
@@ -3378,22 +3365,7 @@ export default function MornGPTHomepage() {
 
                       </div>
                       
-                      {/* Additional security information */}
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <div className="flex items-start space-x-3">
-                          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                          <div>
-                            <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Account Security Features</h5>
-                            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                              <li>• Enhanced 2FA verification for account deletion</li>
-                              <li>• 90-day account restoration period</li>
-                              <li>• Secure confirmation phrase requirement</li>
-                              <li>• Automatic support team notification</li>
-                              <li>• Data encryption and secure storage</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
+
                     </div>
                   </div>
                   
