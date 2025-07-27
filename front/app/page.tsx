@@ -3951,13 +3951,13 @@ export default function MornGPTHomepage() {
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-col space-y-4">
                 {/* Main Input Field */}
-                                 <div className="relative rounded-xl bg-white dark:bg-[#40414f] shadow-md">
+                                 <div className="relative rounded-xl bg-white dark:bg-[#40414f]">
                   <Textarea
                     ref={textareaRef}
                     placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-32 max-h-[28rem] resize-none pr-4 text-base py-3 px-3 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 rounded-xl"
+                    className="min-h-32 max-h-[28rem] resize-none pr-4 text-base py-3 px-3 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 outline-none rounded-xl"
                     onKeyDown={(e) => {
                       const currentHotkey = appUser?.settings?.sendHotkey || "enter"
                       if (checkHotkeyMatch(e, currentHotkey)) {
