@@ -3956,7 +3956,7 @@ export default function MornGPTHomepage() {
                     placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-20 max-h-32 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                    className="min-h-32 max-h-48 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
                     onKeyDown={(e) => {
                       const currentHotkey = appUser?.settings?.sendHotkey || "enter"
                       if (checkHotkeyMatch(e, currentHotkey)) {
@@ -5353,7 +5353,7 @@ export default function MornGPTHomepage() {
                         className="w-32 h-7 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
                         onClick={() => setShowShortcutsHelp(true)}
                       >
-                        <span className="text-xs">{appUser?.settings?.shortcutsEnabled ?? true ? "Enabled" : "Disabled"}</span>
+                        <span className="text-xs">{appUser?.settings?.shortcutsEnabled ?? false ? "Enabled" : "Disabled"}</span>
                       </Button>
                     </div>
                     <div className="flex items-center justify-between">
@@ -5449,7 +5449,7 @@ export default function MornGPTHomepage() {
                     </div>
                     <div className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-600 h-7">
                       <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-500">
-                        {(appUser?.settings?.shortcutsEnabled ?? true) ? (
+                        {(appUser?.settings?.shortcutsEnabled ?? false) ? (
                           <Keyboard className="w-3 h-3 text-white" />
                         ) : (
                           <X className="w-3 h-3 text-white" />
@@ -5457,11 +5457,11 @@ export default function MornGPTHomepage() {
                       </div>
                       <div className="flex-1">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                          {(appUser?.settings?.shortcutsEnabled ?? true) ? 'Shortcuts Active' : 'Shortcuts Disabled'}
+                          {(appUser?.settings?.shortcutsEnabled ?? false) ? 'Shortcuts Active' : 'Shortcuts Disabled'}
                         </span>
                   </div>
                   <Switch 
-                    checked={appUser?.settings?.shortcutsEnabled ?? true}
+                                            checked={appUser?.settings?.shortcutsEnabled ?? false}
                     onCheckedChange={(checked) => updateUserSettings({ shortcutsEnabled: checked })}
                         className="data-[state=checked]:bg-gray-600 data-[state=unchecked]:bg-gray-400"
                   />
