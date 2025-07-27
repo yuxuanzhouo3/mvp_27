@@ -508,6 +508,9 @@ export default function MornGPTHomepage() {
   const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false)
   const [proChatType, setProChatType] = useState<"voice" | "video" | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<(typeof pricingPlans)[0] | null>(null)
+  
+  // Ref for the textarea to enable reliable scrolling
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [autoRenewEnabled, setAutoRenewEnabled] = useState(true)
   const [nextBillingDate, setNextBillingDate] = useState("2024-12-25")
   const [paymentMethod, setPaymentMethod] = useState({
@@ -2075,15 +2078,32 @@ export default function MornGPTHomepage() {
   // Auto-scroll to input area when voice recording starts
   const scrollToInputArea = () => {
     setTimeout(() => {
-      const inputArea = document.querySelector('textarea[placeholder="Start a conversation with MornGPT..."]')
+      // Use the ref if available, otherwise fall back to querySelector
+      const inputArea = textareaRef.current || 
+                       document.querySelector('textarea[placeholder="Start a conversation with MornGPT..."]') ||
+                       document.querySelector('.min-h-20') ||
+                       document.querySelector('textarea')
+      
       if (inputArea) {
+        // Scroll the input area into view
         inputArea.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'center',
+          block: 'end',
           inline: 'nearest'
         })
+        
+        // Also scroll the window to ensure the input area is visible
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        })
+        
+        // Focus the textarea to ensure it's ready for input
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+        }
       }
-    }, 100) // Small delay to ensure the voice recording indicator is rendered
+    }, 300) // Increased delay to ensure all UI elements are rendered
   }
 
   const handleModelChange = (modelType: string, category?: string, model?: string) => {
@@ -3930,6 +3950,7 @@ export default function MornGPTHomepage() {
               <div className="flex items-center space-x-3">
                 <div className="flex-1 relative">
                   <Textarea
+                    ref={textareaRef}
                     placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
