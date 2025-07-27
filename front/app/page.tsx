@@ -1691,6 +1691,7 @@ export default function MornGPTHomepage() {
         try {
           newRecognition.start()
           setIsRecording(true)
+          scrollToInputArea() // Auto-scroll when voice recording starts
         } catch (error) {
           console.error('Error starting speech recognition:', error)
           setVoiceError("Failed to start voice recording")
@@ -1701,6 +1702,7 @@ export default function MornGPTHomepage() {
       try {
         recognition.start()
         setIsRecording(true)
+        scrollToInputArea() // Auto-scroll when voice recording starts
       } catch (error) {
         console.error('Error starting speech recognition:', error)
         setVoiceError("Failed to start voice recording")
@@ -1988,6 +1990,8 @@ export default function MornGPTHomepage() {
         incrementTrialCount("voice")
       }
       
+      scrollToInputArea() // Auto-scroll when Pro voice chat starts
+      
       // Simulate AI voice response
       setTimeout(() => {
         const aiResponse = "Hello! I'm your AI assistant. I can hear you clearly. How can I help you today?"
@@ -2066,6 +2070,20 @@ export default function MornGPTHomepage() {
   const getTrialCountDisplay = (type: "voice" | "video") => {
     const remaining = MAX_TRIAL_ATTEMPTS - proChatTrialCount[type]
     return remaining > 0 ? `${remaining} trials left` : "No trials left"
+  }
+
+  // Auto-scroll to input area when voice recording starts
+  const scrollToInputArea = () => {
+    setTimeout(() => {
+      const inputArea = document.querySelector('textarea[placeholder="Start a conversation with MornGPT..."]')
+      if (inputArea) {
+        inputArea.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        })
+      }
+    }, 100) // Small delay to ensure the voice recording indicator is rendered
   }
 
   const handleModelChange = (modelType: string, category?: string, model?: string) => {
