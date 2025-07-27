@@ -4429,7 +4429,7 @@ export default function MornGPTHomepage() {
                           ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
                       }`}
-                      title={isProVoiceChatActive ? "Stop Pro Voice Chat" : `Pro Voice Chat ${!appUser?.isPro ? `(${getTrialCountDisplay("voice")})` : ""}`}
+                      title={isProVoiceChatActive ? "Stop Pro Voice Chat" : "Pro Voice Chat"}
                       type="button"
                       onClick={isProVoiceChatActive ? stopProVoiceChat : startProVoiceChat}
                       disabled={!appUser}
@@ -4437,14 +4437,7 @@ export default function MornGPTHomepage() {
                       {isProVoiceChatActive ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                       ) : (
-                        <div className="relative">
-                          <Mic className="w-4 h-4" />
-                          {!appUser?.isPro && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full text-[6px] text-white flex items-center justify-center">
-                              {proChatTrialCount.voice}
-                            </div>
-                          )}
-                        </div>
+                        <Mic className="w-4 h-4" />
                       )}
                     </Button>
 
@@ -4457,7 +4450,7 @@ export default function MornGPTHomepage() {
                           ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
                       }`}
-                      title={isProVideoChatActive ? "Stop Pro Video Chat" : `Pro Video Chat ${!appUser?.isPro ? `(${getTrialCountDisplay("video")})` : ""}`}
+                      title={isProVideoChatActive ? "Stop Pro Video Chat" : "Pro Video Chat"}
                       type="button"
                       onClick={isProVideoChatActive ? stopProVideoChat : startProVideoChat}
                       disabled={!appUser}
@@ -4465,14 +4458,7 @@ export default function MornGPTHomepage() {
                       {isProVideoChatActive ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                       ) : (
-                        <div className="relative">
-                          <Video className="w-4 h-4" />
-                          {!appUser?.isPro && (
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full text-[6px] text-white flex items-center justify-center">
-                              {proChatTrialCount.video}
-                            </div>
-                          )}
-                        </div>
+                        <Video className="w-4 h-4" />
                       )}
                     </Button>
 
