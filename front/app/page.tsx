@@ -3956,7 +3956,7 @@ export default function MornGPTHomepage() {
                     placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-32 max-h-48 resize-none pr-52 text-base py-3 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 rounded-lg"
+                    className="min-h-32 max-h-48 resize-none pr-40 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 rounded-lg"
                     onKeyDown={(e) => {
                       const currentHotkey = appUser?.settings?.sendHotkey || "enter"
                       if (checkHotkeyMatch(e, currentHotkey)) {
@@ -3965,7 +3965,7 @@ export default function MornGPTHomepage() {
                       }
                     }}
                   />
-                  <div className="absolute bottom-3 right-3 flex items-center space-x-1 bg-white dark:bg-[#40414f] px-2 py-1 rounded-md">
+                  <div className="absolute bottom-2 right-2 flex items-center space-x-1">
                     <input 
                       type="file" 
                       multiple 
