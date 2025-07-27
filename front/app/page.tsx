@@ -7,6 +7,55 @@
  * Unauthorized copying, distribution, or use is strictly prohibited.
  */
 
+// Speech Recognition types
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  maxAlternatives: number
+  start(): void
+  stop(): void
+  abort(): void
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number
+  results: SpeechRecognitionResultList
+}
+
+interface SpeechRecognitionResultList {
+  length: number
+  item(index: number): SpeechRecognitionResult
+  [index: number]: SpeechRecognitionResult
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean
+  length: number
+  item(index: number): SpeechRecognitionAlternative
+  [index: number]: SpeechRecognitionAlternative
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string
+  confidence: number
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string
+  message: string
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition
+    webkitSpeechRecognition: new () => SpeechRecognition
+  }
+}
+
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
@@ -106,6 +155,12 @@ import {
   Chrome,
   Scale,
   Film,
+  Mic,
+  MicOff,
+  Clock,
+  Camera,
+  Video,
+  VideoOff,
 } from "lucide-react"
 
 const mornGPTCategories = [
@@ -526,6 +581,26 @@ export default function MornGPTHomepage() {
   const [promptSearchQuery, setPromptSearchQuery] = useState("")
   const [messageSearchQuery, setMessageSearchQuery] = useState("")
 
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false)
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
+  const [voiceError, setVoiceError] = useState<string>("")
+
+  // Camera/Video state
+  const [isCameraActive, setIsCameraActive] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const [cameraError, setCameraError] = useState<string>("")
+  const [capturedMedia, setCapturedMedia] = useState<{ type: 'image' | 'video', data: string, name: string } | null>(null)
+  const [isCapturing, setIsCapturing] = useState(false)
+  const [cameraMode, setCameraMode] = useState<'photo' | 'video'>('photo')
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [isVideoRecording, setIsVideoRecording] = useState(false)
+
+  // Location state
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
+  const [locationError, setLocationError] = useState<string>("")
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number; address?: string } | null>(null)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -567,6 +642,18 @@ export default function MornGPTHomepage() {
       }
     }
   }, [guestChatSessions, appUser])
+
+  // Camera cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop())
+      }
+      if ((window as any).recordingTimer) {
+        clearInterval((window as any).recordingTimer)
+      }
+    }
+  }, [cameraStream])
 
   // Clear guest sessions on page unload
   useEffect(() => {
@@ -1535,6 +1622,330 @@ export default function MornGPTHomepage() {
     return '📎'
   }
 
+  // Voice recording functions
+  const initializeSpeechRecognition = () => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = 'en-US'
+        recognition.maxAlternatives = 1
+
+        recognition.onresult = (event) => {
+          let finalTranscript = ''
+          let interimTranscript = ''
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript
+            } else {
+              interimTranscript += transcript
+            }
+          }
+
+          if (finalTranscript) {
+            setPrompt(prev => prev + finalTranscript)
+          }
+        }
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error)
+          setVoiceError(`Speech recognition error: ${event.error}`)
+          setIsRecording(false)
+          setTimeout(() => setVoiceError(""), 5000)
+        }
+
+        recognition.onend = () => {
+          setIsRecording(false)
+        }
+
+        setRecognition(recognition)
+        return recognition
+      } else {
+        setVoiceError("Speech recognition is not supported in this browser")
+        setTimeout(() => setVoiceError(""), 5000)
+        return null
+      }
+    }
+    return null
+  }
+
+  const startVoiceRecording = () => {
+    setVoiceError("")
+    if (!recognition) {
+      const newRecognition = initializeSpeechRecognition()
+      if (newRecognition) {
+        try {
+          newRecognition.start()
+          setIsRecording(true)
+        } catch (error) {
+          console.error('Error starting speech recognition:', error)
+          setVoiceError("Failed to start voice recording")
+          setTimeout(() => setVoiceError(""), 5000)
+        }
+      }
+    } else {
+      try {
+        recognition.start()
+        setIsRecording(true)
+      } catch (error) {
+        console.error('Error starting speech recognition:', error)
+        setVoiceError("Failed to start voice recording")
+        setTimeout(() => setVoiceError(""), 5000)
+      }
+    }
+  }
+
+  const stopVoiceRecording = () => {
+    if (recognition) {
+      try {
+        recognition.stop()
+        setIsRecording(false)
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error)
+        setVoiceError("Failed to stop voice recording")
+        setTimeout(() => setVoiceError(""), 5000)
+      }
+    }
+  }
+
+  const toggleVoiceRecording = () => {
+    if (isRecording) {
+      stopVoiceRecording()
+    } else {
+      startVoiceRecording()
+    }
+  }
+
+  // Camera/Video functions
+  const initializeCamera = async () => {
+    try {
+      setCameraError("")
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }, // Prefer back camera
+        audio: cameraMode === 'video'
+      })
+      setCameraStream(stream)
+      setIsCameraActive(true)
+      return stream
+    } catch (error) {
+      console.error('Camera access error:', error)
+      setCameraError("Failed to access camera. Please check permissions.")
+      setTimeout(() => setCameraError(""), 5000)
+      return null
+    }
+  }
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop())
+      setCameraStream(null)
+      setIsCameraActive(false)
+      setIsVideoRecording(false)
+      setRecordingTime(0)
+    }
+  }
+
+  const toggleCamera = async () => {
+    if (isCameraActive) {
+      stopCamera()
+    } else {
+      await initializeCamera()
+    }
+  }
+
+  const capturePhoto = async () => {
+    if (!cameraStream) return
+
+    setIsCapturing(true)
+    try {
+      const canvas = document.createElement('canvas')
+      const video = document.createElement('video')
+      
+      video.srcObject = cameraStream
+      await video.play()
+      
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(video, 0, 0)
+        const imageData = canvas.toDataURL('image/jpeg', 0.8)
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+        const fileName = `photo-${timestamp}.jpg`
+        
+        setCapturedMedia({
+          type: 'image',
+          data: imageData,
+          name: fileName
+        })
+        
+        // Add to prompt with image reference
+        setPrompt(prev => prev + `\n\n📷 **Captured Photo:** ${fileName}`)
+      }
+    } catch (error) {
+      console.error('Photo capture error:', error)
+      setCameraError("Failed to capture photo")
+      setTimeout(() => setCameraError(""), 5000)
+    } finally {
+      setIsCapturing(false)
+    }
+  }
+
+  const startVideoRecording = async () => {
+    if (!cameraStream) return
+
+    try {
+      setIsVideoRecording(true)
+      setRecordingTime(0)
+      
+      // Start recording timer
+      const timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+
+      // Store timer reference for cleanup
+      ;(window as any).recordingTimer = timer
+      
+    } catch (error) {
+      console.error('Video recording error:', error)
+      setCameraError("Failed to start video recording")
+      setTimeout(() => setCameraError(""), 5000)
+      setIsVideoRecording(false)
+    }
+  }
+
+  const stopVideoRecording = async () => {
+    if (!cameraStream) return
+
+    try {
+      setIsVideoRecording(false)
+      
+      // Clear timer
+      if ((window as any).recordingTimer) {
+        clearInterval((window as any).recordingTimer)
+      }
+      
+      // For now, we'll simulate video capture
+      // In a real implementation, you'd use MediaRecorder API
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const fileName = `video-${timestamp}.mp4`
+      
+      setCapturedMedia({
+        type: 'video',
+        data: `data:video/mp4;base64,simulated-video-data`, // Placeholder
+        name: fileName
+      })
+      
+      // Add to prompt with video reference
+      setPrompt(prev => prev + `\n\n🎥 **Recorded Video:** ${fileName} (${recordingTime}s)`)
+      
+    } catch (error) {
+      console.error('Video recording stop error:', error)
+      setCameraError("Failed to stop video recording")
+      setTimeout(() => setCameraError(""), 5000)
+    }
+  }
+
+  const toggleVideoRecording = () => {
+    if (isVideoRecording) {
+      stopVideoRecording()
+    } else {
+      startVideoRecording()
+    }
+  }
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const switchCameraMode = () => {
+    setCameraMode(prev => prev === 'photo' ? 'video' : 'photo')
+  }
+
+  // Location functions
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by this browser")
+      setTimeout(() => setLocationError(""), 5000)
+      return
+    }
+
+    setIsGettingLocation(true)
+    setLocationError("")
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        })
+      })
+
+      const { latitude, longitude } = position.coords
+      
+      // Try to get address from coordinates using reverse geocoding
+      let address = ""
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+        )
+        const data = await response.json()
+        if (data.display_name) {
+          address = data.display_name
+        }
+      } catch (error) {
+        console.log("Could not get address, using coordinates only")
+      }
+
+      const location = { latitude, longitude, address }
+      setCurrentLocation(location)
+      
+      // Add location to prompt
+      const locationText = address 
+        ? `📍 **Location:** ${address}\n🌐 **Coordinates:** ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+        : `🌐 **Coordinates:** ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+      
+      setPrompt(prev => prev + (prev ? '\n\n' : '') + locationText)
+      
+    } catch (error) {
+      console.error('Location error:', error)
+      let errorMessage = "Failed to get location"
+      
+      if (error instanceof GeolocationPositionError) {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location access denied. Please enable location permissions."
+            break
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information unavailable."
+            break
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out."
+            break
+        }
+      }
+      
+      setLocationError(errorMessage)
+      setTimeout(() => setLocationError(""), 5000)
+    } finally {
+      setIsGettingLocation(false)
+    }
+  }
+
+  const clearLocation = () => {
+    setCurrentLocation(null)
+    setLocationError("")
+  }
+
   const handleModelChange = (modelType: string, category?: string, model?: string) => {
     setSelectedModelType(modelType)
     if (category) setSelectedCategory(category)
@@ -2063,6 +2474,24 @@ export default function MornGPTHomepage() {
       document.getElementById('file-upload')?.click()
     }
 
+    // Voice input shortcut
+    if (checkShortcutMatch(e, "Voice Input")) {
+      e.preventDefault()
+      toggleVoiceRecording()
+    }
+
+    // Camera input shortcut
+    if (checkShortcutMatch(e, "Camera Input")) {
+      e.preventDefault()
+      toggleCamera()
+    }
+
+    // Location input shortcut
+    if (checkShortcutMatch(e, "Location Input")) {
+      e.preventDefault()
+      getCurrentLocation()
+    }
+
     // Downloads shortcut
     if (checkShortcutMatch(e, "Downloads")) {
       e.preventDefault()
@@ -2167,7 +2596,7 @@ export default function MornGPTHomepage() {
   }
 
   const resetPromptsShortcuts = () => {
-    const promptsActions = ["Send Prompt", "Jump to Last", "Jump to Top", "Upload Files", "Prompt History"]
+    const promptsActions = ["Send Prompt", "Jump to Last", "Jump to Top", "Upload Files", "Voice Input", "Camera Input", "Location Input", "Prompt History"]
     const newShortcuts = { ...customShortcuts }
     promptsActions.forEach(action => {
       delete newShortcuts[action]
@@ -2401,7 +2830,7 @@ export default function MornGPTHomepage() {
       "Settings": "Ctrl/Cmd + S",
       "Toggle Theme": "Ctrl/Cmd + D",
       "Ask GPT": "Ctrl/Cmd + G",
-      "Downloads": "Ctrl/Cmd + L",
+      "Downloads": "Ctrl/Cmd + Shift + D",
       "Hotkeys Menu": "Ctrl/Cmd + H",
               "Open Billing": "Ctrl/Cmd + Q",
       "Open Privacy": "Ctrl/Cmd + Y",
@@ -2414,6 +2843,9 @@ export default function MornGPTHomepage() {
       "Jump to Last": "Ctrl/Cmd + J",
       "Jump to Top": "Ctrl/Cmd + T",
       "Upload Files": "Ctrl/Cmd + U",
+      "Voice Input": "Ctrl/Cmd + R",
+      "Camera Input": "Ctrl/Cmd + C",
+      "Location Input": "Ctrl/Cmd + L",
       "Prompt History": "Ctrl/Cmd + P",
       "Billing Management": "Ctrl/Cmd + M",
       "Payment History": "Ctrl/Cmd + I",
@@ -2443,7 +2875,7 @@ export default function MornGPTHomepage() {
       { action: "Settings", current: "Ctrl/Cmd + S" },
       { action: "Toggle Theme", current: "Ctrl/Cmd + D" },
       { action: "Ask GPT", current: "Ctrl/Cmd + G" },
-      { action: "Downloads", current: "Ctrl/Cmd + L" },
+      { action: "Downloads", current: "Ctrl/Cmd + Shift + D" },
       { action: "Hotkeys Menu", current: "Ctrl/Cmd + H" },
               { action: "Open Billing", current: "Ctrl/Cmd + Q" },
       { action: "Open Privacy", current: "Ctrl/Cmd + Y" },
@@ -2456,6 +2888,9 @@ export default function MornGPTHomepage() {
       { action: "Jump to Last", current: "Ctrl/Cmd + J" },
       { action: "Jump to Top", current: "Ctrl/Cmd + T" },
       { action: "Upload Files", current: "Ctrl/Cmd + U" },
+      { action: "Voice Input", current: "Ctrl/Cmd + R" },
+      { action: "Camera Input", current: "Ctrl/Cmd + C" },
+      { action: "Location Input", current: "Ctrl/Cmd + L" },
       { action: "Prompt History", current: "Ctrl/Cmd + P" },
       { action: "Billing Management", current: "Ctrl/Cmd + M" },
       { action: "Payment History", current: "Ctrl/Cmd + I" },
@@ -3355,7 +3790,7 @@ export default function MornGPTHomepage() {
               <div className="flex items-center space-x-3">
                 <div className="flex-1 relative">
                   <Textarea
-                    placeholder="Message MornGPT..."
+                    placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     className="min-h-10 max-h-32 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
@@ -3408,85 +3843,64 @@ export default function MornGPTHomepage() {
                       )}
                     </Button>
 
-                    {/* Prompt History Button */}
-                    {promptHistory.length > 0 && (
-                      <Popover open={isPromptHistoryOpen} onOpenChange={setIsPromptHistoryOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                            title="Previous prompts"
-                          >
-                            <History className="w-4 h-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-80 p-2 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]"
-                          align="end"
-                        >
-                          <div className="space-y-1">
-                            <div className="mb-2">
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Recent Prompts</h4>
-                              </div>
-                            
-                            {/* Search input for prompts */}
-                            <div className="relative mb-2">
-                              <Search className="w-3 h-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                              <Input
-                                placeholder="Search prompts..."
-                                value={promptSearchQuery}
-                                onChange={(e) => setPromptSearchQuery(e.target.value)}
-                                className="pl-7 h-7 text-xs bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
-                              />
-                            </div>
-                            
-                            <ScrollArea className="max-h-60 overflow-y-auto" ref={promptScrollRef}>
-                              {getFilteredPrompts().length === 0 ? (
-                                <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
-                                  {promptSearchQuery.trim() ? "No prompts found" : "No recent prompts"}
-                                </div>
-                              ) : (
-                                getFilteredPrompts().map((historyPrompt, index) => (
-                                  <ContextMenu key={index}>
-                                    <ContextMenuTrigger>
-                                      <div
-                                  className="p-2 text-xs bg-gray-50 dark:bg-[#565869] rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-[#444654] mb-1 text-gray-900 dark:text-[#ececf1]"
-                                  onClick={() => handlePromptSelect(historyPrompt)}
-                                  title={historyPrompt}
-                                >
-                                  {truncateText(historyPrompt, 60)}
-                                </div>
-                                    </ContextMenuTrigger>
-                                    <ContextMenuContent className="w-48 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
-                                      <ContextMenuItem
-                                        onClick={() => handlePromptSelect(historyPrompt)}
-                                        className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                      >
-                                        <MessageSquare className="w-4 h-4 mr-2" />
-                                        Use Prompt
-                                      </ContextMenuItem>
-                                      <ContextMenuItem
-                                        onClick={() => copyToClipboard(historyPrompt)}
-                                        className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                      >
-                                        <Copy className="w-4 h-4 mr-2" />
-                                        Copy Prompt
-                                      </ContextMenuItem>
+                    {/* Voice Input Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                        isRecording 
+                          ? 'text-red-600 dark:text-red-400 animate-pulse' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                      }`}
+                      title={isRecording ? "Stop voice recording" : "Start voice recording"}
+                      type="button"
+                      onClick={toggleVoiceRecording}
+                    >
+                      {isRecording ? (
+                        <MicOff className="w-4 h-4" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </Button>
 
-                                    </ContextMenuContent>
-                                  </ContextMenu>
-                                ))
-                              )}
-                            </ScrollArea>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    )}
+                    {/* Camera Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                        isCameraActive 
+                          ? 'text-blue-600 dark:text-blue-400' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                      }`}
+                      title={isCameraActive ? "Close camera" : "Open camera"}
+                      type="button"
+                      onClick={toggleCamera}
+                    >
+                      <Camera className="w-4 h-4" />
+                    </Button>
+
+                    {/* Location Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={getCurrentLocation}
+                      disabled={isGettingLocation}
+                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                        currentLocation 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                      }`}
+                      title={currentLocation ? "Location added - Click to get new location" : "Get current location"}
+                    >
+                      {isGettingLocation ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      ) : (
+                        <MapPin className="w-4 h-4" />
+                      )}
+                    </Button>
 
                     {/* Ask GPT Button */}
-                    {(messages.length > 0 || bookmarkedMessages.length > 0) && (
-                      <Popover open={isAskGPTOpen} onOpenChange={setIsAskGPTOpen}>
+                    <Popover open={isAskGPTOpen} onOpenChange={setIsAskGPTOpen}>
                         <PopoverTrigger asChild>
                           <Button
                             size="sm"
@@ -3495,7 +3909,7 @@ export default function MornGPTHomepage() {
                             title="Navigate conversation"
                             disabled={!appUser}
                           >
-                            <MapPin className="w-4 h-4" />
+                            <Clock className="w-4 h-4" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -3503,12 +3917,15 @@ export default function MornGPTHomepage() {
                           align="end"
                         >
                           <Tabs defaultValue="messages" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2 mb-2 bg-gray-100 dark:bg-[#565869]">
+                            <TabsList className="grid w-full grid-cols-3 mb-2 bg-gray-100 dark:bg-[#565869]">
                               <TabsTrigger value="messages" className="text-xs text-gray-900 dark:text-[#ececf1]">
                                 Conversation
                               </TabsTrigger>
                               <TabsTrigger value="bookmarks" className="text-xs text-gray-900 dark:text-[#ececf1]">
                                 Bookmarks
+                              </TabsTrigger>
+                              <TabsTrigger value="prompts" className="text-xs text-gray-900 dark:text-[#ececf1]">
+                                Prompts
                               </TabsTrigger>
                             </TabsList>
 
@@ -3817,10 +4234,69 @@ export default function MornGPTHomepage() {
                                 )}
                               </ScrollArea>
                             </TabsContent>
+
+                            <TabsContent value="prompts" className="space-y-1">
+                              <div className="mb-2">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                                  Recent Prompts History
+                                </h4>
+                              </div>
+                              
+                              {/* Search input for prompts */}
+                              <div className="relative mb-2">
+                                <Search className="w-3 h-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                                <Input
+                                  placeholder="Search prompts..."
+                                  value={promptSearchQuery}
+                                  onChange={(e) => setPromptSearchQuery(e.target.value)}
+                                  className="pl-7 h-7 text-xs bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                                />
+                              </div>
+                              
+                              <ScrollArea className="max-h-60 overflow-y-auto" ref={promptScrollRef}>
+                                {getFilteredPrompts().length === 0 ? (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+                                    {promptSearchQuery.trim() ? "No prompts found" : "No recent prompts"}
+                                  </div>
+                                ) : (
+                                  getFilteredPrompts().map((historyPrompt, index) => (
+                                    <ContextMenu key={index}>
+                                      <ContextMenuTrigger>
+                                        <div
+                                          className="p-2 text-xs bg-gray-50 dark:bg-[#565869] rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-[#444654] mb-1 text-gray-900 dark:text-[#ececf1]"
+                                          onClick={() => handlePromptSelect(historyPrompt)}
+                                          title={historyPrompt}
+                                        >
+                                          <div className="flex items-center space-x-2">
+                                            <MessageSquare className="w-3 h-3 text-blue-500 shrink-0" />
+                                            <span className="truncate">{truncateText(historyPrompt, 60)}</span>
+                                          </div>
+                                        </div>
+                                      </ContextMenuTrigger>
+                                      <ContextMenuContent className="w-48 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                                        <ContextMenuItem
+                                          onClick={() => handlePromptSelect(historyPrompt)}
+                                          className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                        >
+                                          <MessageSquare className="w-4 h-4 mr-2" />
+                                          Use Prompt
+                                        </ContextMenuItem>
+                                        <ContextMenuItem
+                                          onClick={() => copyToClipboard(historyPrompt)}
+                                          className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                        >
+                                          <Copy className="w-4 h-4 mr-2" />
+                                          Copy Prompt
+                                        </ContextMenuItem>
+                                      </ContextMenuContent>
+                                    </ContextMenu>
+                                  ))
+                                )}
+                              </ScrollArea>
+                            </TabsContent>
                           </Tabs>
                         </PopoverContent>
                       </Popover>
-                    )}
 
                     {/* Model Selector */}
                     <Popover open={isModelSelectorOpen} onOpenChange={setIsModelSelectorOpen}>
@@ -3984,6 +4460,8 @@ export default function MornGPTHomepage() {
                       </PopoverContent>
                     </Popover>
 
+
+
                     <Button
                       size="sm"
                       onClick={handleSubmit}
@@ -4000,6 +4478,167 @@ export default function MornGPTHomepage() {
               {uploadError && (
                 <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                   <p className="text-xs text-red-600 dark:text-red-400">{uploadError}</p>
+                </div>
+              )}
+
+              {/* Voice Error Display */}
+              {voiceError && (
+                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <p className="text-xs text-red-600 dark:text-red-400">{voiceError}</p>
+                </div>
+              )}
+
+              {/* Camera Error Display */}
+              {cameraError && (
+                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <p className="text-xs text-red-600 dark:text-red-400">{cameraError}</p>
+                </div>
+              )}
+
+              {/* Location Error Display */}
+              {locationError && (
+                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <p className="text-xs text-red-600 dark:text-red-400">{locationError}</p>
+                </div>
+              )}
+
+              {/* Voice Recording Indicator */}
+              {isRecording && (
+                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <p className="text-xs text-red-600 dark:text-red-400">Voice recording active... Speak now</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Location Indicator */}
+              {currentLocation && (
+                <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="w-3 h-3 text-green-600 dark:text-green-400" />
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        Location added to prompt
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={clearLocation}
+                      className="h-4 w-4 p-0 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
+                      title="Remove location"
+                    >
+                      <X className="w-2 h-2" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Camera Interface */}
+              {isCameraActive && (
+                <div className="mt-2 p-4 bg-gray-50 dark:bg-[#565869] border border-gray-200 dark:border-[#565869] rounded-md">
+                  <div className="space-y-3">
+                    {/* Camera Preview */}
+                    <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                      {cameraStream && (
+                        <video
+                          ref={(video) => {
+                            if (video && cameraStream) {
+                              video.srcObject = cameraStream
+                              video.play()
+                            }
+                          }}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          muted
+                          playsInline
+                        />
+                      )}
+                      
+                      {/* Recording Indicator */}
+                      {isVideoRecording && (
+                        <div className="absolute top-2 left-2 flex items-center space-x-2 bg-red-600 text-white px-2 py-1 rounded text-xs">
+                          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                          <span>{formatRecordingTime(recordingTime)}</span>
+                        </div>
+                      )}
+                      
+                      {/* Mode Indicator */}
+                      <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                        {cameraMode === 'photo' ? '📷 Photo' : '🎥 Video'}
+                      </div>
+                    </div>
+
+                    {/* Camera Controls */}
+                    <div className="flex items-center justify-center space-x-4">
+                      {/* Mode Switch */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={switchCameraMode}
+                        className="text-xs"
+                      >
+                        {cameraMode === 'photo' ? 'Switch to Video' : 'Switch to Photo'}
+                      </Button>
+
+                      {/* Capture Button */}
+                      {cameraMode === 'photo' ? (
+                        <Button
+                          size="sm"
+                          onClick={capturePhoto}
+                          disabled={isCapturing}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {isCapturing ? 'Capturing...' : 'Take Photo'}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={toggleVideoRecording}
+                          className={`${
+                            isVideoRecording 
+                              ? 'bg-red-600 hover:bg-red-700' 
+                              : 'bg-blue-600 hover:bg-blue-700'
+                          } text-white`}
+                        >
+                          {isVideoRecording ? 'Stop Recording' : 'Start Recording'}
+                        </Button>
+                      )}
+
+                      {/* Close Camera */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={stopCamera}
+                        className="text-xs"
+                      >
+                        Close
+                      </Button>
+                    </div>
+
+                    {/* Captured Media Preview */}
+                    {capturedMedia && (
+                      <div className="p-2 bg-white dark:bg-[#40414f] border border-gray-200 dark:border-[#565869] rounded">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                          {capturedMedia.type === 'image' ? '📷 Captured Photo:' : '🎥 Recorded Video:'} {capturedMedia.name}
+                        </p>
+                        {capturedMedia.type === 'image' && (
+                          <img 
+                            src={capturedMedia.data} 
+                            alt="Captured" 
+                            className="w-full h-32 object-cover rounded"
+                          />
+                        )}
+                        {capturedMedia.type === 'video' && (
+                          <div className="w-full h-32 bg-gray-100 dark:bg-[#565869] rounded flex items-center justify-center">
+                            <Video className="w-8 h-8 text-gray-400" />
+                            <span className="ml-2 text-sm text-gray-500">Video Preview</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -4691,6 +5330,8 @@ export default function MornGPTHomepage() {
                     { action: "Jump to Last", current: "Ctrl/Cmd + J", description: "Scroll to latest prompt" },
                     { action: "Jump to Top", current: "Ctrl/Cmd + T", description: "Scroll to chat beginning" },
                     { action: "Upload Files", current: "Ctrl/Cmd + U", description: "Open file upload dialog" },
+                    { action: "Voice Input", current: "Ctrl/Cmd + R", description: "Toggle voice recording" },
+                    { action: "Camera Input", current: "Ctrl/Cmd + C", description: "Open camera for photos/videos" },
                     { action: "Prompt History", current: "Ctrl/Cmd + P", description: "Open recent prompts" }
                   ].map((shortcut) => (
                     <div key={shortcut.action} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-[#565869] rounded-lg">

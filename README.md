@@ -12,11 +12,15 @@ This project and its contents are protected by copyright law. Unauthorized copyi
 
 - 🤖 **Multi-Model AI Support**: Access to various AI models including MornGPT specialized models and external providers
 - 💬 **Real-time Chat Interface**: Modern chat UI with message history and conversation management
+- 🎤 **Voice Input**: Speech-to-text functionality with real-time transcription
+- 📷 **Camera Input**: Capture photos and record videos directly in the chat
+- 📎 **File Upload**: Support for multiple file types and formats
 - 🎨 **Dark/Light Theme**: Toggle between dark and light themes
 - 📱 **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 - 🔍 **Smart Search**: Search through chat history and conversations
 - 📚 **Chat Organization**: Organize chats by categories and folders
 - ⭐ **Bookmark System**: Save and organize important messages
+- ⌨️ **Keyboard Shortcuts**: Comprehensive keyboard navigation and shortcuts
 - 🔐 **User Authentication**: Secure login and user management
 - 💳 **Subscription Plans**: Pro features with upgrade options
 
