@@ -21,7 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu"
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator, ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent } from "@/components/ui/context-menu"
 import { Switch } from "@/components/ui/switch"
 import {
   TrendingUp,
@@ -98,6 +98,8 @@ import {
   Monitor,
   Laptop,
   Tablet,
+  Database,
+  Link,
   XCircle,
   Keyboard,
   Navigation,
@@ -367,6 +369,14 @@ interface BookmarkedMessage {
   content: string
   timestamp: Date
   customName?: string
+  folder?: string
+}
+
+interface BookmarkFolder {
+  id: string
+  name: string
+  color?: string
+  createdAt: Date
 }
 
 export default function MornGPTHomepage() {
@@ -448,6 +458,18 @@ export default function MornGPTHomepage() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [bookmarkedMessages, setBookmarkedMessages] = useState<BookmarkedMessage[]>([])
+  const [bookmarkFolders, setBookmarkFolders] = useState<BookmarkFolder[]>([
+    {
+      id: "default",
+      name: "General",
+      color: "#6B7280",
+      createdAt: new Date()
+    }
+  ])
+  const [selectedBookmarkFolder, setSelectedBookmarkFolder] = useState<string>("default")
+  const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false)
+  const [newFolderName, setNewFolderName] = useState("")
+  const [newFolderColor, setNewFolderColor] = useState("#6B7280")
   const [jumpToScrollPosition, setJumpToScrollPosition] = useState(0)
   const [promptScrollPosition, setPromptScrollPosition] = useState(0)
   const [bookmarkScrollPosition, setBookmarkScrollPosition] = useState(0)
@@ -482,6 +504,27 @@ export default function MornGPTHomepage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("credit-card")
   const [currentPlan, setCurrentPlan] = useState<"Basic" | "Pro" | "Enterprise" | null>(null)
 
+  // Share link state
+  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [shareLink, setShareLink] = useState("")
+  const [shareSecret, setShareSecret] = useState("")
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false)
+  const [makeDiscoverable, setMakeDiscoverable] = useState(false)
+  const [isEditingSecret, setIsEditingSecret] = useState(false)
+  const [customSecret, setCustomSecret] = useState("")
+  const [showSecretConfirm, setShowSecretConfirm] = useState(false)
+
+  // Non-logged-in user state
+  const [showRegistrationPrompt, setShowRegistrationPrompt] = useState(false)
+  const [registrationPromptType, setRegistrationPromptType] = useState<"feature" | "save_history" | "paid_model">("feature")
+  const [guestChatSessions, setGuestChatSessions] = useState<ChatSession[]>([])
+  const [showDataCollectionNotice, setShowDataCollectionNotice] = useState(false)
+  const [guestSessionTimeout, setGuestSessionTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  // Search functionality state
+  const [bookmarkSearchQuery, setBookmarkSearchQuery] = useState("")
+  const [promptSearchQuery, setPromptSearchQuery] = useState("")
+  const [messageSearchQuery, setMessageSearchQuery] = useState("")
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -498,12 +541,96 @@ export default function MornGPTHomepage() {
     }
   }, [messages, isLoading])
 
+  // Guest session timeout management
+  useEffect(() => {
+    // Clear any existing timeout
+    if (guestSessionTimeout) {
+      clearTimeout(guestSessionTimeout)
+    }
+
+    // Set new timeout for guest sessions (3 hours of inactivity)
+    if (!appUser && guestChatSessions.length > 0) {
+      const timeout = setTimeout(() => {
+        setGuestChatSessions([])
+        setMessages([])
+        setCurrentChatId("")
+        alert("Your guest session has expired due to inactivity. Your conversations have been cleared.")
+      }, 3 * 60 * 60 * 1000) // 3 hours
+
+      setGuestSessionTimeout(timeout)
+    }
+
+    // Cleanup function
+    return () => {
+      if (guestSessionTimeout) {
+        clearTimeout(guestSessionTimeout)
+      }
+    }
+  }, [guestChatSessions, appUser])
+
+  // Clear guest sessions on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!appUser && guestChatSessions.length > 0) {
+        // Clear guest sessions from localStorage
+        localStorage.removeItem('morngpt_guest_sessions')
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [guestChatSessions, appUser])
+
   // Load user data and theme from localStorage on mount
   useEffect(() => {
     const savedUser = localStorage.getItem("morngpt_user")
     const savedTheme = localStorage.getItem("morngpt_theme")
     const savedPlan = localStorage.getItem("morngpt_current_plan")
     const savedCustomShortcuts = localStorage.getItem("customShortcuts")
+
+    // Check for shared conversation in URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const shareKey = urlParams.get('share')
+    
+    if (shareKey) {
+      try {
+        const sharedData = localStorage.getItem(shareKey)
+        if (sharedData) {
+          const parsedData = JSON.parse(sharedData)
+          
+          // Create a new chat session from shared data
+          const sharedChat: ChatSession = {
+            id: `shared_${Date.now()}`,
+            title: `Shared: ${parsedData.title}`,
+            messages: parsedData.messages,
+            model: parsedData.model,
+            modelType: parsedData.modelType,
+            category: parsedData.category,
+            lastUpdated: new Date(parsedData.createdAt),
+            isModelLocked: true,
+          }
+          
+          // Add to chat sessions and select it
+          if (appUser) {
+            setChatSessions(prev => [sharedChat, ...prev])
+          } else {
+            setGuestChatSessions(prev => [sharedChat, ...prev])
+          }
+          setCurrentChatId(sharedChat.id)
+          setMessages(parsedData.messages)
+          
+          // Clear the share parameter from URL
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, '', newUrl)
+          
+          // Show success message
+          alert(`Shared conversation loaded: "${parsedData.title}" by ${parsedData.createdBy}`)
+        }
+      } catch (error) {
+        console.error('Error loading shared conversation:', error)
+        alert('Error loading shared conversation. The link may be invalid or expired.')
+      }
+    }
 
     if (savedUser) {
       setAppUser(JSON.parse(savedUser))
@@ -671,7 +798,11 @@ export default function MornGPTHomepage() {
   }
 
   const bookmarkMessage = (message: Message) => {
-    if (!appUser) return
+    if (!appUser) {
+      setRegistrationPromptType("feature")
+      setShowRegistrationPrompt(true)
+      return
+    }
 
     const bookmark: BookmarkedMessage = {
       id: Date.now().toString(),
@@ -681,6 +812,7 @@ export default function MornGPTHomepage() {
       content: message.content,
       timestamp: new Date(),
       customName: `Bookmark ${bookmarkedMessages.length + 1}`,
+      folder: selectedBookmarkFolder,
     }
 
     setBookmarkedMessages((prev) => [bookmark, ...prev])
@@ -712,6 +844,119 @@ export default function MornGPTHomepage() {
   const cancelBookmarkEditing = () => {
     setEditingBookmarkId("")
     setEditingBookmarkName("")
+  }
+
+  // Bookmark folder functions
+  const createBookmarkFolder = () => {
+    if (!newFolderName.trim()) return
+    
+    const newFolder: BookmarkFolder = {
+      id: `folder_${Date.now()}`,
+      name: newFolderName.trim(),
+      color: newFolderColor,
+      createdAt: new Date()
+    }
+    
+    setBookmarkFolders(prev => [...prev, newFolder])
+    setNewFolderName("")
+    setNewFolderColor("#6B7280")
+    setShowCreateFolderDialog(false)
+    
+    // Save to localStorage
+    localStorage.setItem('bookmarkFolders', JSON.stringify([...bookmarkFolders, newFolder]))
+  }
+
+  const deleteBookmarkFolder = (folderId: string) => {
+    if (folderId === "default") return // Don't delete default folder
+    
+    // Move bookmarks from deleted folder to default folder
+    setBookmarkedMessages(prev => prev.map(bookmark => 
+      bookmark.folder === folderId ? { ...bookmark, folder: "default" } : bookmark
+    ))
+    
+    // Remove folder
+    setBookmarkFolders(prev => prev.filter(folder => folder.id !== folderId))
+    
+    // Update selected folder if it was the deleted one
+    if (selectedBookmarkFolder === folderId) {
+      setSelectedBookmarkFolder("default")
+    }
+    
+    // Save to localStorage
+    const updatedFolders = bookmarkFolders.filter(folder => folder.id !== folderId)
+    localStorage.setItem('bookmarkFolders', JSON.stringify(updatedFolders))
+  }
+
+  const getBookmarksByFolder = (folderId: string) => {
+    return bookmarkedMessages.filter(bookmark => bookmark.folder === folderId)
+  }
+
+  const moveBookmarkToFolder = (bookmarkId: string, folderId: string) => {
+    setBookmarkedMessages(prev => prev.map(bookmark => 
+      bookmark.id === bookmarkId ? { ...bookmark, folder: folderId } : bookmark
+    ))
+  }
+
+  const exportBookmarks = () => {
+    const exportData = {
+      bookmarks: bookmarkedMessages,
+      folders: bookmarkFolders,
+      exportDate: new Date().toISOString(),
+      version: "1.0"
+    }
+    
+    const dataStr = JSON.stringify(exportData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `morngpt-bookmarks-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const importBookmarks = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          try {
+            const importData = JSON.parse(event.target?.result as string)
+            
+            if (importData.bookmarks && importData.folders) {
+              // Import folders first
+              setBookmarkFolders(prev => {
+                const existingFolderIds = new Set(prev.map(f => f.id))
+                const newFolders = importData.folders.filter((f: BookmarkFolder) => !existingFolderIds.has(f.id))
+                return [...prev, ...newFolders]
+              })
+              
+              // Import bookmarks
+              setBookmarkedMessages(prev => {
+                const existingBookmarkIds = new Set(prev.map(b => b.id))
+                const newBookmarks = importData.bookmarks.filter((b: BookmarkedMessage) => !existingBookmarkIds.has(b.id))
+                return [...prev, ...newBookmarks]
+              })
+              
+              alert(`Successfully imported ${importData.bookmarks.length} bookmarks and ${importData.folders.length} folders!`)
+            } else {
+              alert('Invalid bookmark file format')
+            }
+          } catch (error) {
+            alert('Error importing bookmarks: Invalid JSON file')
+          }
+        }
+        reader.readAsText(file)
+      }
+    }
+    input.click()
   }
 
   const scrollJumpToMessages = (direction: "up" | "down") => {
@@ -1022,9 +1267,20 @@ export default function MornGPTHomepage() {
 
   const handleSubmit = async () => {
     if (!prompt.trim() && uploadedFiles.length === 0) return
+    
+    // Handle non-logged-in users
     if (!appUser) {
-      setShowAuthDialog(true)
-      return
+      // Reset guest session timeout on activity
+      if (guestSessionTimeout) {
+        clearTimeout(guestSessionTimeout)
+      }
+      const newTimeout = setTimeout(() => {
+        setGuestChatSessions([])
+        setMessages([])
+        setCurrentChatId("")
+        alert("Your guest session has expired due to inactivity. Your conversations have been cleared.")
+      }, 3 * 60 * 60 * 1000) // 3 hours
+      setGuestSessionTimeout(newTimeout)
     }
 
     // Create message content with files
@@ -1049,9 +1305,10 @@ export default function MornGPTHomepage() {
     setIsLoading(true)
 
     const currentModel = getSelectedModelDisplay()
-    const currentChat = chatSessions.find((c) => c.id === currentChatId)
+    const currentChat = appUser ? chatSessions.find((c) => c.id === currentChatId) : guestChatSessions.find((c) => c.id === currentChatId)
 
-    if (currentChat && !currentChat.isModelLocked) {
+    // If no current chat exists (especially for guest users), create a new one
+    if (!currentChat) {
       const newChatCategory = selectedCategory || "general"
       const newChat: ChatSession = {
         id: Date.now().toString(),
@@ -1064,13 +1321,41 @@ export default function MornGPTHomepage() {
         isModelLocked: true,
       }
 
+      if (appUser) {
+        setChatSessions((prev) => [newChat, ...prev])
+      } else {
+        setGuestChatSessions((prev) => [newChat, ...prev])
+      }
+      setCurrentChatId(newChat.id)
+
+      if (!expandedFolders.includes(newChatCategory)) {
+        setExpandedFolders([newChatCategory])
+      }
+    } else if (currentChat && !currentChat.isModelLocked) {
+      const newChatCategory = selectedCategory || "general"
+      const newChat: ChatSession = {
+        id: Date.now().toString(),
+        title: userMessage.content.slice(0, 30) + "...",
+        messages: [userMessage],
+        model: currentModel,
+        modelType: selectedModelType,
+        category: newChatCategory,
+        lastUpdated: new Date(),
+        isModelLocked: true,
+      }
+
+      if (appUser) {
       setChatSessions((prev) => [newChat, ...prev.filter((c) => c.id !== currentChatId)])
+      } else {
+        setGuestChatSessions((prev) => [newChat, ...prev.filter((c) => c.id !== currentChatId)])
+      }
       setCurrentChatId(newChat.id)
 
       if (!expandedFolders.includes(newChatCategory)) {
         setExpandedFolders([newChatCategory])
       }
     } else {
+      if (appUser) {
       setChatSessions((prev) =>
         prev.map((session) =>
           session.id === currentChatId
@@ -1083,6 +1368,20 @@ export default function MornGPTHomepage() {
             : session,
         ),
       )
+      } else {
+        setGuestChatSessions((prev) =>
+          prev.map((session) =>
+            session.id === currentChatId
+              ? {
+                  ...session,
+                  isModelLocked: true,
+                  messages: [...session.messages, userMessage],
+                  lastUpdated: new Date(),
+                }
+              : session,
+          ),
+        )
+      }
     }
 
     setTimeout(async () => {
@@ -1091,10 +1390,28 @@ export default function MornGPTHomepage() {
       if (selectedCategory === "h") {
         aiMessage = await simulateMultiGPTResponse(userMessage.content)
       } else {
+        // Generate more specific responses based on the selected model/category
+        let specificResponse = ""
+        
+        if (selectedModelType === "morngpt" && selectedCategory) {
+          const category = mornGPTCategories.find(c => c.id === selectedCategory)
+          if (category) {
+            specificResponse = `As your ${category.name} AI assistant, I'm here to help you with ${category.description.toLowerCase()}. Your question: "${userMessage.content}" is exactly the type of inquiry I'm designed to handle. Let me provide you with specialized guidance in this area.`
+          }
+        } else if (selectedModelType === "external" && selectedModel) {
+          const model = externalModels.find(m => m.name === selectedModel)
+          if (model) {
+            specificResponse = `Using ${model.name} (${model.provider}), I'll help you with: "${userMessage.content}". ${model.description}. This is a simulated response demonstrating the ${model.name} capabilities.`
+          }
+        } else {
+          // General model response
+          specificResponse = `I understand you're asking about: "${userMessage.content}". As ${currentModel}, I'm here to help you with this request. This is a simulated response to demonstrate the chat functionality.`
+        }
+        
         aiMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: `I understand you're asking about: "${userMessage.content}". As ${currentModel}, I'm here to help you with this request. This is a simulated response to demonstrate the chat functionality.`,
+          content: specificResponse,
           timestamp: new Date(),
           model: currentModel,
         }
@@ -1103,6 +1420,7 @@ export default function MornGPTHomepage() {
       setMessages((prev) => [...prev, aiMessage])
       setIsLoading(false)
 
+      if (appUser) {
       setChatSessions((prev) =>
         prev.map((session) =>
           session.id === currentChatId
@@ -1114,6 +1432,19 @@ export default function MornGPTHomepage() {
             : session,
         ),
       )
+      } else {
+        setGuestChatSessions((prev) =>
+          prev.map((session) =>
+            session.id === currentChatId
+              ? {
+                  ...session,
+                  messages: [...session.messages, aiMessage],
+                  lastUpdated: new Date(),
+                }
+              : session,
+          ),
+        )
+      }
     }, 1500)
   }
 
@@ -1364,10 +1695,11 @@ export default function MornGPTHomepage() {
     const messageElement = document.getElementById(`message-${messageId}`)
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: "smooth", block: "center" })
-      // Highlight the message briefly
-      messageElement.classList.add("bg-yellow-100", "dark:bg-yellow-900/50")
+      // Set jump position to trigger conversation area highlighting
+      setJumpToScrollPosition(Date.now())
+      // Remove the highlight after 2 seconds
       setTimeout(() => {
-        messageElement.classList.remove("bg-yellow-100", "dark:bg-yellow-900/50")
+        setJumpToScrollPosition(0)
       }, 2000)
     }
     setIsAskGPTOpen(false)
@@ -1386,6 +1718,47 @@ export default function MornGPTHomepage() {
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text
     return text.slice(0, maxLength) + "..."
+  }
+
+  // Search functionality functions
+  const getFilteredBookmarks = () => {
+    let filtered = bookmarkedMessages
+    
+    // If search query is provided, search across all folders
+    if (bookmarkSearchQuery.trim()) {
+      const query = bookmarkSearchQuery.toLowerCase()
+      filtered = filtered.filter(bookmark => 
+        bookmark.customName?.toLowerCase().includes(query) ||
+        bookmark.title.toLowerCase().includes(query) ||
+        bookmark.content.toLowerCase().includes(query) ||
+        // Search in folder names too
+        bookmarkFolders.find(folder => folder.id === bookmark.folder)?.name.toLowerCase().includes(query)
+      )
+    } else {
+      // If no search query, filter by selected folder
+      filtered = filtered.filter(bookmark => 
+        bookmark.folder === selectedBookmarkFolder || !bookmark.folder
+      )
+    }
+    
+    return filtered
+  }
+
+  const getFilteredPrompts = () => {
+    if (!promptSearchQuery.trim()) return promptHistory
+    const query = promptSearchQuery.toLowerCase()
+    return promptHistory.filter(prompt => 
+      prompt.toLowerCase().includes(query)
+    )
+  }
+
+  const getFilteredMessages = () => {
+    if (!messageSearchQuery.trim()) return messages
+    const query = messageSearchQuery.toLowerCase()
+    return messages.filter(message => 
+      message.content.toLowerCase().includes(query) ||
+      message.role.toLowerCase().includes(query)
+    )
   }
 
   // Download helper functions
@@ -1589,10 +1962,10 @@ export default function MornGPTHomepage() {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
     const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey
 
-                // Simple test - if you press 't', it should log
-            if (e.key === 't' && !cmdOrCtrl && !e.shiftKey) {
-              console.log("Test key 't' pressed - shortcuts are working!")
-            }
+    // Simple test - if you press 't', it should log
+    if (e.key === 't' && !cmdOrCtrl && !e.shiftKey) {
+      console.log("Test key 't' pressed - shortcuts are working!")
+    }
 
             // Open Billing Management
             if (checkShortcutMatch(e, "Open Billing")) {
@@ -1870,6 +2243,130 @@ export default function MornGPTHomepage() {
       }
     }
     input.click()
+  }
+
+  // Share link functions
+  const generateShareLink = async () => {
+    const currentChat = appUser ? chatSessions.find((c) => c.id === currentChatId) : guestChatSessions.find((c) => c.id === currentChatId)
+    
+    if (!currentChat) {
+      alert('No chat selected!')
+      return
+    }
+    
+    if (currentChat.messages.length === 0) {
+      alert('No conversation to share! Start a conversation first.')
+      return
+    }
+
+    setIsGeneratingLink(true)
+    
+    try {
+      // Auto-generate secret key if not provided
+      const autoGeneratedSecret = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+      const secret = customSecret || autoGeneratedSecret
+      
+      // Create share data
+      const shareData = {
+        chatId: currentChatId,
+        title: currentChat.title,
+        messages: currentChat.messages,
+        model: currentChat.model,
+        modelType: currentChat.modelType,
+        category: currentChat.category,
+        secret: secret,
+        createdAt: new Date().toISOString(),
+        createdBy: appUser?.name || 'Anonymous',
+        isPublic: makeDiscoverable,
+        isDiscoverable: makeDiscoverable
+      }
+
+      // In a real app, you would save this to a database
+      // For now, we'll store it in localStorage with a unique key
+      const shareKey = `share_${Date.now()}_${secret}`
+      localStorage.setItem(shareKey, JSON.stringify(shareData))
+
+      // Create the share link
+      const baseUrl = window.location.origin
+      const shareUrl = `${baseUrl}?share=${shareKey}`
+      
+      setShareLink(shareUrl)
+      setShareSecret(secret)
+      setShowShareDialog(true)
+    } catch (error) {
+      console.error('Error generating share link:', error)
+      alert('Error generating share link. Please try again.')
+    } finally {
+      setIsGeneratingLink(false)
+    }
+  }
+
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink)
+      alert('Share link copied to clipboard!')
+    } catch (error) {
+      console.error('Error copying to clipboard:', error)
+      alert('Error copying link. Please copy it manually.')
+    }
+  }
+
+  const copyShareSecret = async () => {
+    try {
+      await navigator.clipboard.writeText(shareSecret)
+      alert('Secret key copied to clipboard!')
+    } catch (error) {
+      console.error('Error copying secret to clipboard:', error)
+      alert('Error copying secret. Please copy it manually.')
+    }
+  }
+
+  const saveCustomSecret = () => {
+    if (customSecret.trim()) {
+      setShareSecret(customSecret.trim())
+      setIsEditingSecret(false)
+      // Regenerate share link with new secret
+      generateShareLink()
+    } else {
+      alert('Please enter a valid secret key')
+    }
+  }
+
+  const regenerateSecretKey = () => {
+    const newSecret = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    setShareSecret(newSecret)
+    setCustomSecret("")
+    // Regenerate share link with new secret
+    generateShareLink()
+  }
+
+  // Social media sharing functions
+  const shareToSocialMedia = (platform: string) => {
+    const currentChat = appUser ? chatSessions.find((c) => c.id === currentChatId) : guestChatSessions.find((c) => c.id === currentChatId)
+    const title = currentChat?.title || "MornGPT Conversation"
+    const text = `Check out this AI conversation: ${title}`
+    
+    const urls = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareLink)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareLink)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(text + ' ' + shareLink)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent(text)}`,
+      reddit: `https://reddit.com/submit?url=${encodeURIComponent(shareLink)}&title=${encodeURIComponent(title)}`,
+      discord: `https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=0&scope=bot`,
+      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text + ' ' + shareLink)}`,
+      slack: `https://slack.com/intl/en-gb/help/articles/360000062963-Share-links-in-Slack`,
+      instagram: `https://www.instagram.com/` // Instagram doesn't support direct link sharing
+    }
+    
+    const url = urls[platform as keyof typeof urls]
+    if (url && platform !== 'instagram') {
+      window.open(url, '_blank', 'width=600,height=400')
+    } else if (platform === 'instagram') {
+      // For Instagram, copy to clipboard since direct sharing isn't supported
+      copyToClipboard(shareLink)
+      alert('Link copied! You can paste it in your Instagram story or bio.')
+    }
   }
 
   const showResetConfirmation = (title: string, message: string, onConfirm: () => void) => {
@@ -2366,6 +2863,20 @@ export default function MornGPTHomepage() {
                                         <Button
                                           size="sm"
                                           variant="ghost"
+                                          className="h-5 w-5 p-0 hover:bg-gray-200 dark:hover:bg-[#565869]"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            selectChat(chat.id)
+                                            setShowShareDialog(true)
+                                          }}
+                                          disabled={chat.messages.length === 0}
+                                          title={chat.messages.length === 0 ? "No conversation to share" : "Share conversation"}
+                                        >
+                                          <Upload className="w-2.5 h-2.5" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
                                           className="h-5 w-5 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                                           onClick={(e) => {
                                             e.stopPropagation()
@@ -2387,6 +2898,17 @@ export default function MornGPTHomepage() {
                               >
                                 <Edit3 className="w-4 h-4 mr-2" />
                                 Rename
+                              </ContextMenuItem>
+                              <ContextMenuItem
+                                onClick={() => {
+                                  selectChat(chat.id)
+                                  setShowShareDialog(true)
+                                }}
+                                disabled={chat.messages.length === 0}
+                                className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Upload className="w-4 h-4 mr-2" />
+                                Share
                               </ContextMenuItem>
                               <ContextMenuItem
                                 onClick={() => deleteChat(chat.id)}
@@ -2412,7 +2934,7 @@ export default function MornGPTHomepage() {
                         <ContextMenu>
                           <ContextMenuTrigger>
                             <div
-                              className="flex items-center space-x-1.5 p-1.5 hover:bg-gray-100 dark:hover:bg-[#565869] rounded cursor-pointer"
+                              className="group flex items-center space-x-1.5 p-1.5 hover:bg-gray-100 dark:hover:bg-[#565869] rounded cursor-pointer relative"
                               onClick={() => toggleFolder(category.id)}
                             >
                               {expandedFolders.includes(category.id) ? (
@@ -2504,6 +3026,20 @@ export default function MornGPTHomepage() {
                                             <Button
                                               size="sm"
                                               variant="ghost"
+                                              className="h-5 w-5 p-0 hover:bg-gray-200 dark:hover:bg-[#565869]"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                selectChat(chat.id)
+                                                setShowShareDialog(true)
+                                              }}
+                                              disabled={chat.messages.length === 0}
+                                              title={chat.messages.length === 0 ? "No conversation to share" : "Share conversation"}
+                                            >
+                                              <Upload className="w-2.5 h-2.5" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
                                               className="h-5 w-5 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                                               onClick={(e) => {
                                                 e.stopPropagation()
@@ -2525,6 +3061,17 @@ export default function MornGPTHomepage() {
                                   >
                                     <Edit3 className="w-4 h-4 mr-2" />
                                     Rename
+                                  </ContextMenuItem>
+                                  <ContextMenuItem
+                                    onClick={() => {
+                                      selectChat(chat.id)
+                                      setShowShareDialog(true)
+                                    }}
+                                    disabled={chat.messages.length === 0}
+                                    className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    Share
                                   </ContextMenuItem>
                                   <ContextMenuItem
                                     onClick={() => deleteChat(chat.id)}
@@ -2564,8 +3111,35 @@ export default function MornGPTHomepage() {
                   {currentChat && (
                     <span className="text-sm text-gray-500 dark:text-gray-400">- {currentChat.title}</span>
                   )}
+                                     {!appUser && (
+                     <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700" title="Data will not be saved unless you login">
+                       Guest User
+                     </Badge>
+                  )}
                 </div>
                 <div className="flex items-center space-x-4">
+                  {/* Share Link Button */}
+                                     <Button
+                     variant="ghost"
+                     size="sm"
+                     onClick={async () => {
+                       if (!appUser) {
+                         setRegistrationPromptType("feature")
+                         setShowRegistrationPrompt(true)
+                         return
+                       }
+                       await generateShareLink()
+                     }}
+                     disabled={!currentChat || (appUser ? messages.length === 0 : guestChatSessions.find(c => c.id === currentChatId)?.messages.length === 0)}
+                     className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] disabled:opacity-50 disabled:cursor-not-allowed"
+                     title={!appUser ? "Sign up to share conversations" : !currentChat ? "No chat selected" : (appUser ? messages.length === 0 : guestChatSessions.find(c => c.id === currentChatId)?.messages.length === 0) ? "No conversation to share" : "Share conversation"}
+                   >
+                    {isGeneratingLink ? (
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -2650,13 +3224,17 @@ export default function MornGPTHomepage() {
                       <span>• Use Ctrl/Cmd + Enter</span>
                     </div>
                   </div>
+
+
                 </div>
               </div>
             ) : (
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
               <ScrollArea className="h-full" ref={scrollAreaRef}>
-                <div className="p-4">
+                    <div className={`p-4 transition-colors duration-500 ${jumpToScrollPosition > 0 ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}>
                   <div className="max-w-4xl mx-auto space-y-4">
-                    {messages.map((message) => (
+                        {(appUser ? messages : guestChatSessions.find(c => c.id === currentChatId)?.messages || []).map((message) => (
                       <div
                         key={message.id}
                         id={`message-${message.id}`}
@@ -2756,6 +3334,18 @@ export default function MornGPTHomepage() {
                   </div>
                 </div>
               </ScrollArea>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                  <ContextMenuItem
+                                         onClick={() => setShowShareDialog(true)}
+                    disabled={!currentChat || messages.length === 0}
+                    className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Share
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             )}
           </div>
 
@@ -2765,11 +3355,10 @@ export default function MornGPTHomepage() {
               <div className="flex items-center space-x-3">
                 <div className="flex-1 relative">
                   <Textarea
-                    placeholder={appUser ? "Message MornGPT..." : "Please login to start chatting..."}
+                    placeholder="Message MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     className="min-h-10 max-h-32 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
-                    disabled={!appUser}
                     onKeyDown={(e) => {
                       const currentHotkey = appUser?.settings?.sendHotkey || "enter"
                       if (checkHotkeyMatch(e, currentHotkey)) {
@@ -2786,7 +3375,7 @@ export default function MornGPTHomepage() {
                       className="hidden" 
                       id="file-upload"
                       accept={ALLOWED_FILE_TYPES.join(',')}
-                      disabled={!appUser || isUploading}
+                      disabled={isUploading}
                     />
                     <Button
                       size="sm"
@@ -2802,7 +3391,7 @@ export default function MornGPTHomepage() {
                               : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
                         }
                       type="button"
-                      disabled={!appUser || isUploading}
+                        disabled={isUploading}
                       onClick={() => {
                         if (uploadedFiles.length >= MAX_FILES) {
                           setUploadError(`Maximum ${MAX_FILES} files reached. Please remove some files first.`)
@@ -2828,7 +3417,6 @@ export default function MornGPTHomepage() {
                             variant="ghost"
                             className="h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]"
                             title="Previous prompts"
-                            disabled={!appUser}
                           >
                             <History className="w-4 h-4" />
                           </Button>
@@ -2838,40 +3426,58 @@ export default function MornGPTHomepage() {
                           align="end"
                         >
                           <div className="space-y-1">
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="mb-2">
                               <h4 className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Recent Prompts</h4>
-                              <div className="flex items-center space-x-1">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-5 w-5 p-0 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                  onClick={() => scrollPromptHistory("up")}
-                                  title="Scroll up"
-                                >
-                                  <ChevronUp className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-5 w-5 p-0 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                  onClick={() => scrollPromptHistory("down")}
-                                  title="Scroll down"
-                                >
-                                  <ChevronDown className="w-3 h-3" />
-                                </Button>
                               </div>
+                            
+                            {/* Search input for prompts */}
+                            <div className="relative mb-2">
+                              <Search className="w-3 h-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                              <Input
+                                placeholder="Search prompts..."
+                                value={promptSearchQuery}
+                                onChange={(e) => setPromptSearchQuery(e.target.value)}
+                                className="pl-7 h-7 text-xs bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                              />
                             </div>
-                            <ScrollArea className="max-h-60" ref={promptScrollRef}>
-                              {promptHistory.map((historyPrompt, index) => (
-                                <div
-                                  key={index}
+                            
+                            <ScrollArea className="max-h-60 overflow-y-auto" ref={promptScrollRef}>
+                              {getFilteredPrompts().length === 0 ? (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+                                  {promptSearchQuery.trim() ? "No prompts found" : "No recent prompts"}
+                                </div>
+                              ) : (
+                                getFilteredPrompts().map((historyPrompt, index) => (
+                                  <ContextMenu key={index}>
+                                    <ContextMenuTrigger>
+                                      <div
                                   className="p-2 text-xs bg-gray-50 dark:bg-[#565869] rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-[#444654] mb-1 text-gray-900 dark:text-[#ececf1]"
                                   onClick={() => handlePromptSelect(historyPrompt)}
                                   title={historyPrompt}
                                 >
                                   {truncateText(historyPrompt, 60)}
                                 </div>
-                              ))}
+                                    </ContextMenuTrigger>
+                                    <ContextMenuContent className="w-48 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                                      <ContextMenuItem
+                                        onClick={() => handlePromptSelect(historyPrompt)}
+                                        className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                      >
+                                        <MessageSquare className="w-4 h-4 mr-2" />
+                                        Use Prompt
+                                      </ContextMenuItem>
+                                      <ContextMenuItem
+                                        onClick={() => copyToClipboard(historyPrompt)}
+                                        className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                      >
+                                        <Copy className="w-4 h-4 mr-2" />
+                                        Copy Prompt
+                                      </ContextMenuItem>
+
+                                    </ContextMenuContent>
+                                  </ContextMenu>
+                                ))
+                              )}
                             </ScrollArea>
                           </div>
                         </PopoverContent>
@@ -2899,7 +3505,7 @@ export default function MornGPTHomepage() {
                           <Tabs defaultValue="messages" className="w-full">
                             <TabsList className="grid w-full grid-cols-2 mb-2 bg-gray-100 dark:bg-[#565869]">
                               <TabsTrigger value="messages" className="text-xs text-gray-900 dark:text-[#ececf1]">
-                                Messages
+                                Conversation
                               </TabsTrigger>
                               <TabsTrigger value="bookmarks" className="text-xs text-gray-900 dark:text-[#ececf1]">
                                 Bookmarks
@@ -2907,38 +3513,36 @@ export default function MornGPTHomepage() {
                             </TabsList>
 
                             <TabsContent value="messages" className="space-y-1">
-                              <div className="flex items-center justify-between mb-2">
+                              <div className="mb-2">
                                 <h4 className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
-                                  Jump to Message
+                                  Jump to Conversation Section
                                 </h4>
-                                <div className="flex items-center space-x-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-5 w-5 p-0 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                    onClick={() => scrollJumpToMessages("up")}
-                                    title="Scroll up"
-                                  >
-                                    <ChevronUp className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-5 w-5 p-0 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                    onClick={() => scrollJumpToMessages("down")}
-                                    title="Scroll down"
-                                  >
-                                    <ChevronDown className="w-3 h-3" />
-                                  </Button>
                                 </div>
+                              
+                              {/* Search input for messages */}
+                              <div className="relative mb-2">
+                                <Search className="w-3 h-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                                <Input
+                                  placeholder="Search conversations..."
+                                  value={messageSearchQuery}
+                                  onChange={(e) => setMessageSearchQuery(e.target.value)}
+                                  className="pl-7 h-7 text-xs bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                                />
                               </div>
-                              <ScrollArea className="max-h-60" ref={jumpToScrollRef}>
-                                {messages
+                              
+                              <ScrollArea className="max-h-60 overflow-y-auto" ref={jumpToScrollRef}>
+                                {getFilteredMessages().length === 0 ? (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+                                    {messageSearchQuery.trim() ? "No conversations found" : "No conversations yet"}
+                                  </div>
+                                ) : (
+                                  getFilteredMessages()
                                   .slice()
                                   .reverse()
                                   .map((message, index) => (
+                                      <ContextMenu key={message.id}>
+                                        <ContextMenuTrigger>
                                     <div
-                                      key={message.id}
                                       className="p-2 text-xs bg-gray-50 dark:bg-[#565869] rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-[#444654] mb-1"
                                       onClick={() => jumpToMessage(message.id)}
                                     >
@@ -2954,7 +3558,42 @@ export default function MornGPTHomepage() {
                                         {message.content.slice(0, 60)}...
                                       </div>
                                     </div>
-                                  ))}
+                                        </ContextMenuTrigger>
+                                        <ContextMenuContent className="w-48 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                                          <ContextMenuItem
+                                            onClick={() => jumpToMessage(message.id)}
+                                            className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                          >
+                                            <ChevronRight className="w-4 h-4 mr-2" />
+                                            Jump to Message
+                                          </ContextMenuItem>
+
+                                          <ContextMenuItem
+                                            onClick={() => copyToClipboard(message.content)}
+                                            className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                          >
+                                            <Copy className="w-4 h-4 mr-2" />
+                                            Copy Message
+                                          </ContextMenuItem>
+                                          <ContextMenuItem
+                                            onClick={() => {
+                                              if (!appUser) {
+                                                setRegistrationPromptType("feature")
+                                                setShowRegistrationPrompt(true)
+                                                return
+                                              }
+                                              generateShareLink()
+                                            }}
+                                            disabled={!appUser}
+                                            className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869] disabled:opacity-50 disabled:cursor-not-allowed"
+                                          >
+                                            <Upload className="w-4 h-4 mr-2" />
+                                            Share Conversation
+                                          </ContextMenuItem>
+                                        </ContextMenuContent>
+                                      </ContextMenu>
+                                    ))
+                                )}
                               </ScrollArea>
                             </TabsContent>
 
@@ -2968,29 +3607,84 @@ export default function MornGPTHomepage() {
                                     size="sm"
                                     variant="ghost"
                                     className="h-5 w-5 p-0 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                    onClick={() => scrollBookmarks("up")}
-                                    title="Scroll up"
+                                    onClick={exportBookmarks}
+                                    title="Export bookmarks"
                                   >
-                                    <ChevronUp className="w-3 h-3" />
+                                    <Download className="w-3 h-3" />
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="ghost"
                                     className="h-5 w-5 p-0 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#565869]"
-                                    onClick={() => scrollBookmarks("down")}
-                                    title="Scroll down"
+                                    onClick={importBookmarks}
+                                    title="Import bookmarks"
                                   >
-                                    <ChevronDown className="w-3 h-3" />
+                                    <Upload className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-5 w-5 p-0 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                    onClick={() => setShowCreateFolderDialog(true)}
+                                    title="Create new folder"
+                                  >
+                                    <Plus className="w-3 h-3" />
                                   </Button>
                                 </div>
                               </div>
-                              <ScrollArea className="max-h-60" ref={bookmarkScrollRef}>
-                                {bookmarkedMessages.length === 0 ? (
+                              
+                              {/* Folder selector */}
+                              <div className="mb-2">
+                                <Select value={selectedBookmarkFolder} onValueChange={setSelectedBookmarkFolder}>
+                                  <SelectTrigger className="h-7 text-xs bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]">
+                                    <SelectContent>
+                                      {bookmarkFolders.map((folder) => (
+                                        <SelectItem key={folder.id} value={folder.id} className="text-xs">
+                                          <div className="flex items-center space-x-2">
+                                            <div 
+                                              className="w-3 h-3 rounded-full" 
+                                              style={{ backgroundColor: folder.color }}
+                                            />
+                                            <span>{folder.name}</span>
+                                            {folder.id !== "default" && (
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-4 w-4 p-0 ml-auto text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  deleteBookmarkFolder(folder.id)
+                                                }}
+                                              >
+                                                <X className="w-2 h-2" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </SelectTrigger>
+                                </Select>
+                              </div>
+                              
+                              {/* Search input for bookmarks */}
+                              <div className="relative mb-2">
+                                <Search className="w-3 h-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                                <Input
+                                  placeholder="Search bookmarks..."
+                                  value={bookmarkSearchQuery}
+                                  onChange={(e) => setBookmarkSearchQuery(e.target.value)}
+                                  className="pl-7 h-7 text-xs bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                                />
+                              </div>
+                              
+                              <ScrollArea className="max-h-60 overflow-y-auto" ref={bookmarkScrollRef}>
+                                {getFilteredBookmarks().length === 0 ? (
                                   <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
-                                    No bookmarked messages yet
+                                    {bookmarkSearchQuery.trim() ? "No bookmarks found" : "No bookmarked messages yet"}
                                   </div>
                                 ) : (
-                                  bookmarkedMessages.map((bookmark) => (
+                                  getFilteredBookmarks().map((bookmark) => (
                                     <ContextMenu key={bookmark.id}>
                                       <ContextMenuTrigger>
                                         <div
@@ -3074,6 +3768,43 @@ export default function MornGPTHomepage() {
                                           Rename
                                         </ContextMenuItem>
                                         <ContextMenuItem
+                                          onClick={() => copyToClipboard(bookmark.content)}
+                                          className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                        >
+                                          <Copy className="w-4 h-4 mr-2" />
+                                          Copy Content
+                                        </ContextMenuItem>
+                                        <ContextMenuItem
+                                          onClick={() => jumpToBookmark(bookmark)}
+                                          className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                        >
+                                          <ChevronRight className="w-4 h-4 mr-2" />
+                                          Jump to Message
+                                        </ContextMenuItem>
+                                        <ContextMenuSeparator />
+                                        <ContextMenuSub>
+                                          <ContextMenuSubTrigger className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]">
+                                            <Folder className="w-4 h-4 mr-2" />
+                                            Move to Folder
+                                          </ContextMenuSubTrigger>
+                                          <ContextMenuSubContent className="w-48 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+                                            {bookmarkFolders.map((folder) => (
+                                              <ContextMenuItem
+                                                key={folder.id}
+                                                onClick={() => moveBookmarkToFolder(bookmark.id, folder.id)}
+                                                className="text-gray-900 dark:text-[#ececf1] hover:bg-gray-100 dark:hover:bg-[#565869]"
+                                              >
+                                                <div 
+                                                  className="w-3 h-3 rounded-full mr-2" 
+                                                  style={{ backgroundColor: folder.color }}
+                                                />
+                                                {folder.name}
+                                              </ContextMenuItem>
+                                            ))}
+                                          </ContextMenuSubContent>
+                                        </ContextMenuSub>
+                                        <ContextMenuSeparator />
+                                        <ContextMenuItem
                                           onClick={() => removeBookmark(bookmark.id)}
                                           className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                                         >
@@ -3098,13 +3829,13 @@ export default function MornGPTHomepage() {
                           size="sm"
                           variant="outline"
                           className="h-6 px-2 text-xs border-gray-300 dark:border-[#565869] hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1]"
-                          disabled={isModelLocked || !appUser}
+                          disabled={isModelLocked}
                           title="Select Model"
                         >
                           <div className="flex items-center space-x-1">
                             {getModelIcon()}
                             <span className="max-w-20 truncate">{getSelectedModelDisplay()}</span>
-                            {!isModelLocked && appUser && <ChevronDown className="w-3 h-3" />}
+                            {!isModelLocked && <ChevronDown className="w-3 h-3" />}
                           </div>
                         </Button>
                       </PopoverTrigger>
@@ -3182,8 +3913,8 @@ export default function MornGPTHomepage() {
                           <TabsContent value="external" className="p-2">
                             <div className="grid grid-cols-3 gap-1">
                               {externalModels.map((model, index) => {
-                                                const isPaidModel = model.type !== "free"
-                const canAccess = !isPaidModel || (appUser && appUser.isPaid)
+                                                const isPaidModel = model.type === "popular" || model.type === "premium"
+                const canAccess = !isPaidModel || (appUser && appUser.isPaid) // Only paid users can access paid models
                                 
                                 return (
                                   <div
@@ -3203,8 +3934,14 @@ export default function MornGPTHomepage() {
                                       if (canAccess) {
                                         handleModelChange("external", undefined, model.name)
                                       } else {
-                                        // Show upgrade prompt for paid models
+                                        // Show sign-up/sign-in prompt for guest users trying to access paid models
+                                        if (!appUser) {
+                                          setShowRegistrationPrompt(true)
+                                          setRegistrationPromptType("paid_model")
+                                        } else {
+                                          // Show upgrade prompt for logged-in users
                                         handleUpgradeClick(pricingPlans[1]) // Pro plan
+                                        }
                                       }
                                     }}
                                   >
@@ -3250,7 +3987,7 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       onClick={handleSubmit}
-                      disabled={!prompt.trim() || isLoading || !appUser}
+                      disabled={!prompt.trim() || isLoading}
                       className="h-6 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <Send className="w-4 h-4" />
@@ -3786,7 +4523,7 @@ export default function MornGPTHomepage() {
                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500">
                       <Settings className="w-3 h-3 text-white" />
                     </div>
-                    <div>
+                  <div>
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-[#ececf1]">Global Settings</h3>
                       <p className="text-xs text-gray-600 dark:text-gray-400">Manage shortcuts and preferences</p>
                     </div>
@@ -3820,12 +4557,12 @@ export default function MornGPTHomepage() {
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                           {(appUser?.settings?.shortcutsEnabled ?? true) ? 'Shortcuts Active' : 'Shortcuts Disabled'}
                         </span>
-                      </div>
-                      <Switch 
-                        checked={appUser?.settings?.shortcutsEnabled ?? true}
-                        onCheckedChange={(checked) => updateUserSettings({ shortcutsEnabled: checked })}
+                  </div>
+                  <Switch 
+                    checked={appUser?.settings?.shortcutsEnabled ?? true}
+                    onCheckedChange={(checked) => updateUserSettings({ shortcutsEnabled: checked })}
                         className="data-[state=checked]:bg-gray-600 data-[state=unchecked]:bg-gray-400"
-                      />
+                  />
                     </div>
                   </div>
                 </div>
@@ -4517,19 +5254,19 @@ export default function MornGPTHomepage() {
                         </div>
 
                 {/* Import Data */}
-                <div className={`bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow ${!appUser?.isPaid ? 'opacity-60' : ''}`}>
+                <div className={`bg-white dark:bg-[#40414f] rounded-lg p-3 border border-gray-100 dark:border-[#565869] shadow-sm hover:shadow-md transition-shadow ${!appUser?.isPro ? 'opacity-60' : ''}`}>
                         <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                                             <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-sm">
                         <Download className="w-4 h-4 text-white" />
-                      </div>
+                        </div>
                       <div className="flex items-center space-x-1">
                         <p className="font-medium text-sm text-gray-900 dark:text-[#ececf1]">Import Data</p>
-                        {!appUser?.isPaid && <Lock className="w-3 h-3 text-gray-400" />}
+                        {!appUser?.isPro && <Lock className="w-3 h-3 text-gray-400" />}
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {appUser?.isPaid ? "Import your data from other platforms" : "Paid feature - Upgrade to import data"}
+                          {appUser?.isPro ? "Import your data from other platforms" : "Pro feature - Upgrade to import data"}
                         </p>
                     </div>
                           </div>
@@ -4537,20 +5274,20 @@ export default function MornGPTHomepage() {
                       size="sm"
                           variant="outline"
                           onClick={() => {
-                            if (!appUser?.isPaid) {
+                            if (!appUser?.isPro) {
                               setShowPrivacyDialog(false)
                               setShowBillingDialog(true)
                             } else {
-                              // Handle import data functionality for paid users
+                              // Handle import data functionality for Pro users
                               console.log("Import data clicked")
                             }
                           }}
-                      className={`${appUser?.isPaid 
+                      className={`${appUser?.isPro 
                         ? 'bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]' 
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 cursor-not-allowed'
                       } shadow-sm text-xs`}
                         >
-                      {appUser?.isPaid ? "Import" : "Paid Only"}
+                      {appUser?.isPro ? "Import" : "Pro Only"}
                         </Button>
                         </div>
                       </div>
@@ -5525,6 +6262,258 @@ export default function MornGPTHomepage() {
           </DialogContent>
         </Dialog>
 
+        {/* Secret Confirmation Dialog */}
+        <Dialog open={showSecretConfirm} onOpenChange={setShowSecretConfirm}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Shield className="w-5 h-5 text-blue-500" />
+                <span>Secret Key Generated</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">⚠</span>
+                  </div>
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <p className="font-medium mb-2">Important: Save your secret key!</p>
+                    <p>This secret key is required to access the shared conversation. Make sure to save it securely and share it only with intended recipients.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                  Your Secret Key:
+                      </Label>
+                <div className="flex space-x-2">
+                        <Input
+                          value={shareSecret}
+                          readOnly
+                          className="flex-1 bg-gray-50 dark:bg-[#565869] font-mono text-sm font-bold"
+                    placeholder="Secret key..."
+                        />
+                        <Button
+                          size="sm"
+                          onClick={copyShareSecret}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                  Share Link:
+                </Label>
+                <div className="flex space-x-2">
+                  <Input
+                    value={shareLink}
+                    readOnly
+                    className="flex-1 bg-gray-50 dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                    placeholder="Share link..."
+                  />
+                  <Button
+                    size="sm"
+                    onClick={copyShareLink}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+                    </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+                      <div className="flex items-start space-x-2">
+                  <div className="w-5 h-5 bg-yellow-100 dark:bg-yellow-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">💡</span>
+                        </div>
+                  <div className="text-xs text-yellow-800 dark:text-yellow-200">
+                          <p className="font-medium mb-1">How to share:</p>
+                          <ol className="list-decimal list-inside space-y-1">
+                            <li>Copy the share link above</li>
+                            <li>Share the secret key with your recipient</li>
+                            <li>They need both the link and secret key to access</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
+
+              <div className="flex space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSecretConfirm(false)}
+                  className="flex-1 border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+                >
+                  Got it!
+                </Button>
+                  </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Registration Prompt Dialog */}
+        <Dialog open={showRegistrationPrompt} onOpenChange={setShowRegistrationPrompt}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Crown className="w-5 h-5 text-yellow-500" />
+                <span className="text-lg">
+                  {registrationPromptType === "feature" ? "Premium Feature" : 
+                   registrationPromptType === "paid_model" ? "Premium AI Model" : "Save Your History"}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <div className="space-y-3">
+                {registrationPromptType === "feature" && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="mb-2">This feature requires a registered account.</p>
+                    <p>Sign up now to access all premium features and save your conversation history!</p>
+                  </div>
+                )}
+                
+                {registrationPromptType === "save_history" && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="mb-2">Your conversation history will be lost when you leave.</p>
+                    <p>Create an account to save your chats and access them from anywhere!</p>
+                  </div>
+                )}
+                
+                {registrationPromptType === "paid_model" && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="mb-2">This premium AI model requires a paid subscription.</p>
+                    <p>Sign up and upgrade to access advanced AI models like GPT-4, Claude 3.5, and more!</p>
+                  </div>
+                )}
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">✓</span>
+                    </div>
+                    <div className="text-xs text-blue-800 dark:text-blue-200">
+                      <p className="font-medium mb-1">
+                        {registrationPromptType === "paid_model" ? "Premium Account Benefits:" : "Free Account Benefits:"}
+                      </p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {registrationPromptType === "paid_model" ? (
+                          <>
+                            <li>Access to GPT-4, Claude 3.5, and premium models</li>
+                            <li>Unlimited conversations with advanced AI</li>
+                            <li>Priority processing and faster responses</li>
+                            <li>Save chat history and access from anywhere</li>
+                          </>
+                        ) : (
+                          <>
+                            <li>Unlimited conversations</li>
+                            <li>Save chat history</li>
+                            <li>Access from any device</li>
+                            <li>Advanced AI models</li>
+                </>
+              )}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowRegistrationPrompt(false)}
+                className="flex-1 border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+              >
+                Continue as Guest
+              </Button>
+                <Button
+                onClick={() => {
+                  setShowRegistrationPrompt(false)
+                  setShowAuthDialog(true)
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {registrationPromptType === "paid_model" ? "Sign Up & Upgrade" : "Create Account"}
+                </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Data Collection Notice Dialog */}
+        <Dialog open={showDataCollectionNotice} onOpenChange={setShowDataCollectionNotice}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Database className="w-5 h-5 text-blue-500" />
+                <span className="text-lg">Data Collection Notice</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="mb-2">As a guest user, you have full access to all features including model selection, bookmarks, and prompts.</p>
+                  <p className="mb-2"><strong>Important:</strong> Your personal chat history will not be saved unless you create an account.</p>
+                </div>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">ℹ</span>
+                    </div>
+                    <div className="text-xs text-blue-800 dark:text-blue-200">
+                      <p className="font-medium mb-1">Training Data Collection:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Conversations stored in database for AI training</li>
+                        <li>Model selection and usage patterns</li>
+                        <li>Bookmark and prompt interactions</li>
+                        <li>Performance analytics for model improvement</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-yellow-100 dark:bg-yellow-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">⚠</span>
+                    </div>
+                    <div className="text-xs text-yellow-800 dark:text-yellow-200">
+                      <p className="font-medium mb-1">Personal Data Retention:</p>
+                      <p>Your personal chat history, bookmarks, and settings will not be saved unless you create an account.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDataCollectionNotice(false)}
+                className="flex-1 border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+              >
+                Continue as Guest
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowDataCollectionNotice(false)
+                  setShowAuthDialog(true)
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Create Account
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Reset Confirmation Dialog */}
         <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
           <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
@@ -5555,6 +6544,332 @@ export default function MornGPTHomepage() {
               >
                 Reset
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Bookmark Folder Dialog */}
+        <Dialog open={showCreateFolderDialog} onOpenChange={setShowCreateFolderDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Folder className="w-5 h-5 text-blue-500" />
+                <span className="text-lg">Create New Folder</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4 space-y-4">
+              <div>
+                <Label htmlFor="folder-name" className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                  Folder Name
+                </Label>
+                <Input
+                  id="folder-name"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Enter folder name..."
+                  className="mt-1 bg-white dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") createBookmarkFolder()
+                    if (e.key === "Escape") setShowCreateFolderDialog(false)
+                  }}
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                  Folder Color
+                </Label>
+                <div className="mt-1 flex space-x-2">
+                  {["#6B7280", "#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899"].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setNewFolderColor(color)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${
+                        newFolderColor === color 
+                          ? 'border-gray-900 dark:border-white scale-110' 
+                          : 'border-gray-300 dark:border-gray-600 hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateFolderDialog(false)}
+                className="flex-1 border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={createBookmarkFolder}
+                disabled={!newFolderName.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+              >
+                Create Folder
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Share Dialog */}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Upload className="w-5 h-5 text-blue-500" />
+                <span className="text-lg">Share Conversation</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4 space-y-4">
+              {isGeneratingLink ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-gray-600 dark:text-gray-400">Generating share link...</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                        Share Link
+                      </Label>
+                      <div className="flex space-x-2 mt-1">
+                        <Input
+                          value={shareLink}
+                          readOnly
+                          className="flex-1 bg-gray-50 dark:bg-[#565869] text-gray-900 dark:text-[#ececf1] border-gray-300 dark:border-[#565869]"
+                          placeholder="Share link will appear here..."
+                        />
+                        <Button
+                          size="sm"
+                          onClick={copyShareLink}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {!makeDiscoverable && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                          Secret Key
+                        </Label>
+                        <div className="flex space-x-2 mt-1">
+                          <Input
+                            value={shareSecret}
+                            readOnly
+                            className="flex-1 bg-gray-50 dark:bg-[#565869] font-mono text-sm font-bold"
+                            placeholder="Secret key will appear here..."
+                          />
+                          <Button
+                            size="sm"
+                            onClick={copyShareSecret}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={makeDiscoverable}
+                        onCheckedChange={setMakeDiscoverable}
+                      />
+                      <Label className="text-sm text-gray-700 dark:text-gray-300">
+                        Make conversation discoverable (public)
+                      </Label>
+                    </div>
+
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                      <div className="flex items-start space-x-2">
+                        <div className="w-5 h-5 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-bold text-blue-600 dark:text-blue-400">ℹ</span>
+                        </div>
+                        <div className="text-xs text-blue-800 dark:text-blue-200">
+                          <p className="font-medium mb-1">How to share:</p>
+                          {makeDiscoverable ? (
+                            <p>This conversation is public. Anyone with the link can access it.</p>
+                          ) : (
+                            <ol className="list-decimal list-inside space-y-1">
+                              <li>Copy the share link above</li>
+                              <li>Share the secret key with your recipient</li>
+                              <li>They need both the link and secret key to access</li>
+                            </ol>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Social Media Sharing */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-900 dark:text-[#ececf1] mb-2 block">
+                        Share to Social Media
+                      </Label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {/* Twitter */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('twitter')}
+                          className="h-8 p-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-700"
+                          title="Share on Twitter"
+                        >
+                          <div className="w-4 h-4 bg-blue-500 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">𝕏</span>
+                          </div>
+                        </Button>
+                        
+                        {/* Facebook */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('facebook')}
+                          className="h-8 p-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-700"
+                          title="Share on Facebook"
+                        >
+                          <div className="w-4 h-4 bg-blue-600 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">f</span>
+                          </div>
+                        </Button>
+                        
+                        {/* LinkedIn */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('linkedin')}
+                          className="h-8 p-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-700"
+                          title="Share on LinkedIn"
+                        >
+                          <div className="w-4 h-4 bg-blue-700 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">in</span>
+                          </div>
+                        </Button>
+                        
+                        {/* WhatsApp */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('whatsapp')}
+                          className="h-8 p-1 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 border-green-200 dark:border-green-700"
+                          title="Share on WhatsApp"
+                        >
+                          <div className="w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">W</span>
+                          </div>
+                        </Button>
+                        
+                        {/* Telegram */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('telegram')}
+                          className="h-8 p-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-700"
+                          title="Share on Telegram"
+                        >
+                          <div className="w-4 h-4 bg-blue-400 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">T</span>
+                          </div>
+                        </Button>
+                        
+                        {/* Reddit */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('reddit')}
+                          className="h-8 p-1 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 border-orange-200 dark:border-orange-700"
+                          title="Share on Reddit"
+                        >
+                          <div className="w-4 h-4 bg-orange-500 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">R</span>
+                          </div>
+                        </Button>
+                        
+                        {/* Discord */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('discord')}
+                          className="h-8 p-1 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 border-purple-200 dark:border-purple-700"
+                          title="Share on Discord"
+                        >
+                          <div className="w-4 h-4 bg-purple-500 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">D</span>
+                          </div>
+                        </Button>
+                        
+                        {/* Email */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('email')}
+                          className="h-8 p-1 bg-gray-50 hover:bg-gray-100 dark:bg-gray-900/20 dark:hover:bg-gray-900/30 border-gray-200 dark:border-gray-700"
+                          title="Share via Email"
+                        >
+                          <div className="w-4 h-4 bg-gray-500 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">@</span>
+                          </div>
+                        </Button>
+                        
+                        {/* Slack */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('slack')}
+                          className="h-8 p-1 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 border-purple-200 dark:border-purple-700"
+                          title="Share on Slack"
+                        >
+                          <div className="w-4 h-4 bg-purple-600 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">S</span>
+                          </div>
+                        </Button>
+                        
+                        {/* Instagram */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => shareToSocialMedia('instagram')}
+                          className="h-8 p-1 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:hover:bg-pink-900/30 border-pink-200 dark:border-pink-700"
+                          title="Copy for Instagram"
+                        >
+                          <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-sm flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">IG</span>
+                          </div>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowShareDialog(false)}
+                className="flex-1 border-gray-300 dark:border-[#565869] hover:bg-gray-50 dark:hover:bg-[#565869]"
+              >
+                Close
+              </Button>
+              {!isGeneratingLink && (
+                <Button
+                  onClick={regenerateSecretKey}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Generate New Key
+                </Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>
