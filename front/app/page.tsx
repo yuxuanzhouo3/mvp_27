@@ -497,6 +497,16 @@ export default function MornGPTHomepage() {
   const [selectedPlanInDialog, setSelectedPlanInDialog] = useState<(typeof pricingPlans)[0] | null>(null)
   const [showBillingDialog, setShowBillingDialog] = useState(false)
   const [showPaymentEditDialog, setShowPaymentEditDialog] = useState(false)
+  
+  // Pro Voice/Video Chat State
+  const [isProVoiceChatActive, setIsProVoiceChatActive] = useState(false)
+  const [isProVideoChatActive, setIsProVideoChatActive] = useState(false)
+  const [proVoiceChatStream, setProVoiceChatStream] = useState<MediaStream | null>(null)
+  const [proVideoChatStream, setProVideoChatStream] = useState<MediaStream | null>(null)
+  const [proChatError, setProChatError] = useState<string>("")
+  const [proChatTrialCount, setProChatTrialCount] = useState<{ voice: number, video: number }>({ voice: 0, video: 0 })
+  const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false)
+  const [proChatType, setProChatType] = useState<"voice" | "video" | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<(typeof pricingPlans)[0] | null>(null)
   const [autoRenewEnabled, setAutoRenewEnabled] = useState(true)
   const [nextBillingDate, setNextBillingDate] = useState("2024-12-25")
@@ -1944,6 +1954,118 @@ export default function MornGPTHomepage() {
   const clearLocation = () => {
     setCurrentLocation(null)
     setLocationError("")
+  }
+
+  // Pro Voice/Video Chat Functions
+  const MAX_TRIAL_ATTEMPTS = 3
+
+  const checkProAccess = (type: "voice" | "video") => {
+    if (appUser?.isPro) return true
+    return proChatTrialCount[type] < MAX_TRIAL_ATTEMPTS
+  }
+
+  const incrementTrialCount = (type: "voice" | "video") => {
+    setProChatTrialCount(prev => ({
+      ...prev,
+      [type]: prev[type] + 1
+    }))
+  }
+
+  const startProVoiceChat = async () => {
+    if (!checkProAccess("voice")) {
+      setShowProUpgradeDialog(true)
+      setProChatType("voice")
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      setProVoiceChatStream(stream)
+      setIsProVoiceChatActive(true)
+      setProChatError("")
+      
+      if (!appUser?.isPro) {
+        incrementTrialCount("voice")
+      }
+      
+      // Simulate AI voice response
+      setTimeout(() => {
+        const aiResponse = "Hello! I'm your AI assistant. I can hear you clearly. How can I help you today?"
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: aiResponse,
+          timestamp: new Date(),
+          model: "Pro Voice Chat"
+        }
+        setMessages(prev => [...prev, newMessage])
+      }, 2000)
+      
+    } catch (error) {
+      setProChatError("Failed to access microphone. Please check permissions.")
+    }
+  }
+
+  const startProVideoChat = async () => {
+    if (!checkProAccess("video")) {
+      setShowProUpgradeDialog(true)
+      setProChatType("video")
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true, 
+        video: { 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        } 
+      })
+      setProVideoChatStream(stream)
+      setIsProVideoChatActive(true)
+      setProChatError("")
+      
+      if (!appUser?.isPro) {
+        incrementTrialCount("video")
+      }
+      
+      // Simulate AI video response
+      setTimeout(() => {
+        const aiResponse = "Hello! I can see and hear you. This is a premium video chat experience. How can I assist you?"
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: aiResponse,
+          timestamp: new Date(),
+          model: "Pro Video Chat"
+        }
+        setMessages(prev => [...prev, newMessage])
+      }, 2000)
+      
+    } catch (error) {
+      setProChatError("Failed to access camera and microphone. Please check permissions.")
+    }
+  }
+
+  const stopProVoiceChat = () => {
+    if (proVoiceChatStream) {
+      proVoiceChatStream.getTracks().forEach(track => track.stop())
+      setProVoiceChatStream(null)
+    }
+    setIsProVoiceChatActive(false)
+  }
+
+  const stopProVideoChat = () => {
+    if (proVideoChatStream) {
+      proVideoChatStream.getTracks().forEach(track => track.stop())
+      setProVideoChatStream(null)
+    }
+    setIsProVideoChatActive(false)
+  }
+
+  const getTrialCountDisplay = (type: "voice" | "video") => {
+    const remaining = MAX_TRIAL_ATTEMPTS - proChatTrialCount[type]
+    return remaining > 0 ? `${remaining} trials left` : "No trials left"
   }
 
   const handleModelChange = (modelType: string, category?: string, model?: string) => {
@@ -4298,6 +4420,62 @@ export default function MornGPTHomepage() {
                         </PopoverContent>
                       </Popover>
 
+                    {/* Pro Voice Chat Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                        isProVoiceChatActive 
+                          ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                      }`}
+                      title={isProVoiceChatActive ? "Stop Pro Voice Chat" : `Pro Voice Chat ${!appUser?.isPro ? `(${getTrialCountDisplay("voice")})` : ""}`}
+                      type="button"
+                      onClick={isProVoiceChatActive ? stopProVoiceChat : startProVoiceChat}
+                      disabled={!appUser}
+                    >
+                      {isProVoiceChatActive ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      ) : (
+                        <div className="relative">
+                          <Volume2 className="w-4 h-4" />
+                          {!appUser?.isPro && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full text-[6px] text-white flex items-center justify-center">
+                              {proChatTrialCount.voice}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Button>
+
+                    {/* Pro Video Chat Button */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                        isProVideoChatActive 
+                          ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                      }`}
+                      title={isProVideoChatActive ? "Stop Pro Video Chat" : `Pro Video Chat ${!appUser?.isPro ? `(${getTrialCountDisplay("video")})` : ""}`}
+                      type="button"
+                      onClick={isProVideoChatActive ? stopProVideoChat : startProVideoChat}
+                      disabled={!appUser}
+                    >
+                      {isProVideoChatActive ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      ) : (
+                        <div className="relative">
+                          <Video className="w-4 h-4" />
+                          {!appUser?.isPro && (
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full text-[6px] text-white flex items-center justify-center">
+                              {proChatTrialCount.video}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Button>
+
                     {/* Model Selector */}
                     <Popover open={isModelSelectorOpen} onOpenChange={setIsModelSelectorOpen}>
                       <PopoverTrigger asChild>
@@ -4502,12 +4680,67 @@ export default function MornGPTHomepage() {
                 </div>
               )}
 
+              {/* Pro Chat Error Display */}
+              {proChatError && (
+                <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <p className="text-xs text-red-600 dark:text-red-400">{proChatError}</p>
+                </div>
+              )}
+
               {/* Voice Recording Indicator */}
               {isRecording && (
                 <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                     <p className="text-xs text-red-600 dark:text-red-400">Voice recording active... Speak now</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Pro Voice Chat Indicator */}
+              {isProVoiceChatActive && (
+                <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                      <Volume2 className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                      <p className="text-xs text-purple-600 dark:text-purple-400">
+                        Pro Voice Chat active... AI is listening
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={stopProVoiceChat}
+                      className="h-4 w-4 p-0 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                      title="Stop Pro Voice Chat"
+                    >
+                      <X className="w-2 h-2" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Pro Video Chat Indicator */}
+              {isProVideoChatActive && (
+                <div className="mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                      <Video className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                      <p className="text-xs text-purple-600 dark:text-purple-400">
+                        Pro Video Chat active... AI is watching and listening
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={stopProVideoChat}
+                      className="h-4 w-4 p-0 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                      title="Stop Pro Video Chat"
+                    >
+                      <X className="w-2 h-2" />
+                    </Button>
                   </div>
                 </div>
               )}
@@ -5459,6 +5692,112 @@ export default function MornGPTHomepage() {
             </div>
             
 
+          </DialogContent>
+        </Dialog>
+
+        {/* Pro Upgrade Dialog */}
+        <Dialog open={showProUpgradeDialog} onOpenChange={setShowProUpgradeDialog}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
+                <Crown className="w-5 h-5 text-purple-500" />
+                <span>Upgrade to Pro for Premium Features</span>
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
+                {proChatType === "voice" 
+                  ? "Unlock unlimited Pro Voice Chat with AI" 
+                  : "Unlock unlimited Pro Video Chat with AI"
+                }
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Feature Highlight */}
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                    {proChatType === "voice" ? (
+                      <Volume2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    ) : (
+                      <Video className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-[#ececf1]">
+                      Pro {proChatType === "voice" ? "Voice" : "Video"} Chat
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {proChatType === "voice" 
+                        ? "Real-time voice conversations with AI assistant" 
+                        : "Face-to-face video conversations with AI assistant"
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Trial Status */}
+              <div className="p-3 bg-gray-50 dark:bg-[#565869] rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {proChatType === "voice" ? "Voice Chat" : "Video Chat"} Trials Used:
+                  </span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">
+                    {proChatTrialCount[proChatType || "voice"]}/{MAX_TRIAL_ATTEMPTS}
+                  </span>
+                </div>
+                <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${(proChatTrialCount[proChatType || "voice"] / MAX_TRIAL_ATTEMPTS) * 100}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Pro Benefits */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">Pro Benefits:</h4>
+                <ul className="space-y-1">
+                  <li className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Unlimited {proChatType === "voice" ? "voice" : "video"} chat sessions</span>
+                  </li>
+                  <li className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Advanced AI responses with context awareness</span>
+                  </li>
+                  <li className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Priority processing and faster responses</span>
+                  </li>
+                  <li className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>Access to all premium AI models</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <DialogFooter className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowProUpgradeDialog(false)}
+                className="flex-1"
+              >
+                Maybe Later
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowProUpgradeDialog(false)
+                  setShowUpgradeDialog(true)
+                }}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                Upgrade to Pro
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
