@@ -3951,7 +3951,7 @@ export default function MornGPTHomepage() {
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-col space-y-4">
                 {/* Main Input Field */}
-                                 <div className="relative rounded-xl bg-white dark:bg-[#40414f]">
+                                 <div className="relative rounded-xl bg-white dark:bg-[#40414f] border border-white dark:border-[#40414f]">
                   <Textarea
                     ref={textareaRef}
                     placeholder="Start a conversation with MornGPT..."
