@@ -3981,7 +3981,7 @@ export default function MornGPTHomepage() {
                       {isRecording ? (
                         <MicOff className="w-4 h-4" />
                       ) : (
-                        <Mic className="w-4 h-4" />
+                        <Volume2 className="w-4 h-4" />
                       )}
                     </Button>
 
@@ -4438,7 +4438,7 @@ export default function MornGPTHomepage() {
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                       ) : (
                         <div className="relative">
-                          <Volume2 className="w-4 h-4" />
+                          <Mic className="w-4 h-4" />
                           {!appUser?.isPro && (
                             <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full text-[6px] text-white flex items-center justify-center">
                               {proChatTrialCount.voice}
