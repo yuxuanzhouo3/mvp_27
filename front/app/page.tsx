@@ -3947,16 +3947,17 @@ export default function MornGPTHomepage() {
           </div>
 
           {/* Input Area - Fixed at bottom */}
-          <div className="border-t border-gray-200 dark:border-[#565869] bg-white dark:bg-[#40414f] flex-shrink-0 p-4 sticky bottom-0">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-center space-x-3">
-                <div className="flex-1 relative border border-gray-300 dark:border-[#565869] rounded-lg bg-white dark:bg-[#40414f]">
+          <div className="border-t border-gray-200 dark:border-[#565869] bg-white dark:bg-[#40414f] flex-shrink-0 p-6 sticky bottom-0">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex flex-col space-y-4">
+                {/* Main Input Field */}
+                                 <div className="relative rounded-xl bg-white dark:bg-[#40414f] shadow-md">
                   <Textarea
                     ref={textareaRef}
                     placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-32 max-h-48 resize-none pr-64 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 rounded-lg"
+                    className="min-h-32 max-h-[28rem] resize-none pr-4 text-base py-3 px-3 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 rounded-xl"
                     onKeyDown={(e) => {
                       const currentHotkey = appUser?.settings?.sendHotkey || "enter"
                       if (checkHotkeyMatch(e, currentHotkey)) {
@@ -3965,7 +3966,53 @@ export default function MornGPTHomepage() {
                       }
                     }}
                   />
-                  <div className="absolute bottom-2 right-2 flex items-center space-x-1">
+                </div>
+                
+                {/* Action Buttons Row */}
+                <div className="flex items-center justify-between">
+                  {/* Left Side - Quick Action Buttons */}
+                  <div className="flex items-center space-x-1 ml-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("deep-thinking")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Brain className="w-3 h-3" />
+                      <span className="text-xs font-medium">Deep Thinking</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("creative")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Lightbulb className="w-3 h-3" />
+                      <span className="text-xs font-medium">Creative Ideas</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("analyze")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Target className="w-3 h-3" />
+                      <span className="text-xs font-medium">Analyze</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("solve")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Zap className="w-3 h-3" />
+                      <span className="text-xs font-medium">Problem Solve</span>
+                    </Button>
+                  </div>
+                  
+                                    {/* Right Side - Input Controls */}
+                  <div className="flex items-center space-x-3">
+                    {/* File Upload */}
                     <input 
                       type="file" 
                       multiple 
@@ -3978,15 +4025,15 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 ${
+                      className={`h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         isUploading ? 'animate-pulse' : ''
                       }`}
-                                              title={
-                          uploadedFiles.length >= MAX_FILES 
-                            ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
-                            : isUploading 
-                              ? 'Uploading...' 
-                              : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
+                      title={
+                        uploadedFiles.length >= MAX_FILES 
+                          ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
+                          : isUploading 
+                            ? 'Uploading...' 
+                            : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
                         }
                       type="button"
                         disabled={isUploading}
@@ -4000,9 +4047,9 @@ export default function MornGPTHomepage() {
                       }}
                     >
                       {isUploading ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
                       ) : (
-                        <Paperclip className="w-4 h-4" />
+                        <Paperclip className="w-2.5 h-2.5" />
                       )}
                     </Button>
 
@@ -4010,7 +4057,7 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         isRecording 
                           ? 'text-red-600 dark:text-red-400 animate-pulse' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
@@ -4020,9 +4067,9 @@ export default function MornGPTHomepage() {
                       onClick={toggleVoiceRecording}
                     >
                       {isRecording ? (
-                        <MicOff className="w-4 h-4" />
+                        <MicOff className="w-2.5 h-2.5" />
                       ) : (
-                        <Volume2 className="w-4 h-4" />
+                        <Volume2 className="w-2.5 h-2.5" />
                       )}
                     </Button>
 
@@ -4030,7 +4077,7 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         isCameraActive 
                           ? 'text-blue-600 dark:text-blue-400' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
@@ -4039,7 +4086,7 @@ export default function MornGPTHomepage() {
                       type="button"
                       onClick={toggleCamera}
                     >
-                      <Camera className="w-4 h-4" />
+                      <Camera className="w-2.5 h-2.5" />
                     </Button>
 
                     {/* Location Button */}
@@ -4048,7 +4095,7 @@ export default function MornGPTHomepage() {
                       variant="ghost"
                       onClick={getCurrentLocation}
                       disabled={isGettingLocation}
-                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         currentLocation 
                           ? 'text-green-600 dark:text-green-400' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
@@ -4056,9 +4103,9 @@ export default function MornGPTHomepage() {
                       title={currentLocation ? "Location added - Click to get new location" : "Get current location"}
                     >
                       {isGettingLocation ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
                       ) : (
-                        <MapPin className="w-4 h-4" />
+                        <MapPin className="w-2.5 h-2.5" />
                       )}
                     </Button>
 
@@ -4068,11 +4115,11 @@ export default function MornGPTHomepage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-6 w-6 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]"
+                            className="h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] rounded-full border border-gray-300 dark:border-[#565869]"
                             title="Navigate conversation"
                             disabled={!appUser}
                           >
-                            <Clock className="w-4 h-4" />
+                            <Clock className="w-2.5 h-2.5" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -4465,7 +4512,7 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         isProVoiceChatActive 
                           ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
@@ -4479,9 +4526,9 @@ export default function MornGPTHomepage() {
                       disabled={!appUser}
                     >
                       {isProVoiceChatActive ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
                       ) : (
-                        <Mic className="w-4 h-4" />
+                        <Mic className="w-2.5 h-2.5" />
                       )}
                     </Button>
 
@@ -4489,7 +4536,7 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-6 w-6 p-0 transition-all duration-200 ${
+                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         isProVideoChatActive 
                           ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
@@ -4500,9 +4547,9 @@ export default function MornGPTHomepage() {
                       disabled={!appUser}
                     >
                       {isProVideoChatActive ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
                       ) : (
-                        <Video className="w-4 h-4" />
+                        <Video className="w-2.5 h-2.5" />
                       )}
                     </Button>
 
@@ -4524,7 +4571,7 @@ export default function MornGPTHomepage() {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-[600px] p-0 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]"
+                        className="w-[1000px] p-0 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]"
                         align="end"
                       >
                         <Tabs value={selectedModelType} onValueChange={setSelectedModelType} className="w-full">
@@ -4674,9 +4721,9 @@ export default function MornGPTHomepage() {
                       size="sm"
                       onClick={handleSubmit}
                       disabled={!prompt.trim() || isLoading}
-                      className="h-6 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="h-7 w-7 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-sm ml-2"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-2.5 h-2.5" />
                     </Button>
                   </div>
                 </div>
@@ -4947,45 +4994,7 @@ export default function MornGPTHomepage() {
                   </div>
                 )}
 
-              {/* Enhanced Quick Actions */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("deep-thinking")}
-                  className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869]"
-                >
-                  <Brain className="w-3 h-3" />
-                  <span>Deep Thinking</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("creative")}
-                  className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869]"
-                >
-                  <Lightbulb className="w-3 h-3" />
-                  <span>Creative Ideas</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("analyze")}
-                  className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869]"
-                >
-                  <Target className="w-3 h-3" />
-                  <span>Analyze</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("solve")}
-                  className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869]"
-                >
-                  <Zap className="w-3 h-3" />
-                  <span>Problem Solve</span>
-                </Button>
-              </div>
+
             </div>
           </div>
         </div>
@@ -7244,7 +7253,7 @@ export default function MornGPTHomepage() {
                   </div>
                   {(appUser?.settings?.adsEnabled ?? false) && !appUser.isPro && (
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <div className="flex items-center space-x-2 mb-2">
+                      <div className="flex items-start space-x-2 mb-2">
                         <Crown className="w-4 h-4 text-yellow-600" />
                         <span className="text-sm font-medium text-gray-900 dark:text-[#ececf1]">Upgrade</span>
                       </div>
