@@ -1732,6 +1732,8 @@ export default function MornGPTHomepage() {
       stopVoiceRecording()
     } else {
       startVoiceRecording()
+      // Auto-scroll when voice input button is clicked
+      scrollToInputArea()
     }
   }
 
@@ -2077,6 +2079,12 @@ export default function MornGPTHomepage() {
 
   // Auto-scroll to input area when voice recording starts
   const scrollToInputArea = () => {
+    // Immediate scroll to bottom
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: 'smooth'
+    })
+    
     setTimeout(() => {
       // Use the ref if available, otherwise fall back to querySelector
       const inputArea = textareaRef.current || 
@@ -2092,18 +2100,12 @@ export default function MornGPTHomepage() {
           inline: 'nearest'
         })
         
-        // Also scroll the window to ensure the input area is visible
-        window.scrollTo({
-          top: document.body.scrollHeight,
-          behavior: 'smooth'
-        })
-        
         // Focus the textarea to ensure it's ready for input
         if (textareaRef.current) {
           textareaRef.current.focus()
         }
       }
-    }, 300) // Increased delay to ensure all UI elements are rendered
+    }, 200) // Reduced delay for faster response
   }
 
   const handleModelChange = (modelType: string, category?: string, model?: string) => {
@@ -4470,7 +4472,10 @@ export default function MornGPTHomepage() {
                       }`}
                       title={isProVoiceChatActive ? "Stop Pro Voice Chat" : "Pro Voice Chat"}
                       type="button"
-                      onClick={isProVoiceChatActive ? stopProVoiceChat : startProVoiceChat}
+                      onClick={isProVoiceChatActive ? stopProVoiceChat : () => {
+                        startProVoiceChat()
+                        scrollToInputArea()
+                      }}
                       disabled={!appUser}
                     >
                       {isProVoiceChatActive ? (
