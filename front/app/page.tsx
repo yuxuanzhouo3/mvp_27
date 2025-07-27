@@ -3950,13 +3950,13 @@ export default function MornGPTHomepage() {
           <div className="border-t border-gray-200 dark:border-[#565869] bg-white dark:bg-[#40414f] flex-shrink-0 p-4 sticky bottom-0">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center space-x-3">
-                <div className="flex-1 relative">
+                <div className="flex-1 relative border border-gray-300 dark:border-[#565869] rounded-lg bg-white dark:bg-[#40414f]">
                   <Textarea
                     ref={textareaRef}
                     placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-32 max-h-48 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                    className="min-h-32 max-h-48 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 rounded-lg"
                     onKeyDown={(e) => {
                       const currentHotkey = appUser?.settings?.sendHotkey || "enter"
                       if (checkHotkeyMatch(e, currentHotkey)) {
