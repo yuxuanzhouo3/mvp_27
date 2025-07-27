@@ -3915,7 +3915,7 @@ export default function MornGPTHomepage() {
                     placeholder="Start a conversation with MornGPT..."
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-10 max-h-32 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
+                    className="min-h-20 max-h-32 resize-none pr-48 text-base py-2 text-gray-900 dark:text-[#ececf1] bg-white dark:bg-[#40414f] border-gray-300 dark:border-[#565869]"
                     onKeyDown={(e) => {
                       const currentHotkey = appUser?.settings?.sendHotkey || "enter"
                       if (checkHotkeyMatch(e, currentHotkey)) {
