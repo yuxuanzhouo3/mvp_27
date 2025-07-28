@@ -1,12 +1,46 @@
-# MornGPT Homepage
+# MornGPT Frontend Base Template
 
-A modern, responsive AI chat interface built with Next.js, TypeScript, and Tailwind CSS.
+A modern, responsive AI chat interface built with Next.js, TypeScript, and Tailwind CSS. This serves as the foundational frontend template for MornGPT's comprehensive AI platform.
 
 ## Copyright
 
 **Copyright © 2025 Yuxuan Zhou. All rights reserved.**
 
 This project and its contents are protected by copyright law. Unauthorized copying, distribution, or use is strictly prohibited.
+
+## Overview
+
+MornGPT Frontend Base Template is designed as a scalable foundation for 17 specialized AI products, each with their own sub-categories and specialized models. The architecture supports exponential growth from 17 core products to potentially 1000+ specialized use cases based on different countries, user groups, and other factors.
+
+### Product Architecture
+
+**17 Core Specialized Products:**
+- **Growth Advisory (A1)** - Business growth and strategy
+- **Interview/Job (B1)** - Career and employment assistance
+- **AI Coder (C1)** - Programming and development
+- **Content Detection (D1)** - Content analysis and verification
+- **Medical Advice (E1)** - Health and wellness guidance
+- **Multi-GPT (H1)** - Multi-model AI orchestration
+- **Housing (O1)** - Real estate and accommodation
+- **Person Matching (P1)** - Relationship and networking
+- **AI Teacher (Q1)** - Education and learning
+- **Travel Planning (R1)** - Travel and tourism
+- **Product Search (S1)** - E-commerce and shopping
+- **Fashion (T1)** - Style and fashion advice
+- **Food & Dining (U1)** - Culinary and dining
+- **Content Generation (W1)** - Creative content creation
+- **AI Protection (Z1)** - Security and privacy
+
+**Scalable Sub-Categories:**
+Each of the 17 core products can expand into multiple sub-categories:
+- **Geographic Variations**: Country-specific models and content
+- **Demographic Targeting**: Age groups, professions, interests
+- **Industry Specialization**: Healthcare, finance, education, etc.
+- **Use Case Variations**: Personal, professional, academic contexts
+
+**Potential Scale:**
+- **17 Core Products** → **100+ Sub-Categories** → **1000+ Specialized Models**
+- **Factors**: Country/region, user demographics, industry verticals, use cases
 
 ## Features
 
@@ -23,6 +57,7 @@ This project and its contents are protected by copyright law. Unauthorized copyi
 - ⌨️ **Keyboard Shortcuts**: Comprehensive keyboard navigation and shortcuts
 - 🔐 **User Authentication**: Secure login and user management
 - 💳 **Subscription Plans**: Pro features with upgrade options
+- 🏗️ **Modular Architecture**: Designed for easy customization and scaling
 
 ## Tech Stack
 
@@ -167,4 +202,6 @@ For questions or support regarding this project, please contact:
 
 ---
 
-*Built with ❤️ using Next.js, TypeScript, and Tailwind CSS* 
+*Built with ❤️ using Next.js, TypeScript, and Tailwind CSS*
+
+*MornGPT Frontend Base Template - Foundation for 17 specialized AI products with scalable architecture for 1000+ use cases* 
