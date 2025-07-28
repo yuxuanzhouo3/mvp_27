@@ -493,6 +493,7 @@ export default function MornGPTHomepage() {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  const [selectedPaidModel, setSelectedPaidModel] = useState<any>(null)
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("annual")
   const [selectedPlanInDialog, setSelectedPlanInDialog] = useState<(typeof pricingPlans)[0] | null>(null)
   const [showBillingDialog, setShowBillingDialog] = useState(false)
@@ -1232,7 +1233,15 @@ export default function MornGPTHomepage() {
       localStorage.setItem("morngpt_user", JSON.stringify(updatedUser))
       localStorage.setItem("morngpt_current_plan", selectedPlan.name)
       setShowPaymentDialog(false)
-      alert(`Successfully upgraded to ${selectedPlan.name} plan! Welcome to MornGPT Pro!`)
+      
+      // If this was triggered by a paid model, select it after payment
+      if (selectedPaidModel) {
+        handleModelChange("external", undefined, selectedPaidModel.name)
+        setSelectedPaidModel(null)
+        alert(`Successfully upgraded to ${selectedPlan.name} plan! You now have access to ${selectedPaidModel.name} and other premium models.`)
+      } else {
+        alert(`Successfully upgraded to ${selectedPlan.name} plan! Welcome to MornGPT Pro!`)
+      }
     }
   }
 
@@ -3948,211 +3957,184 @@ export default function MornGPTHomepage() {
 
           {/* Input Area - Fixed at bottom */}
           <div className="border-t border-gray-200 dark:border-[#565869] bg-white dark:bg-[#40414f] flex-shrink-0 p-6 sticky bottom-0">
-            <div className="max-w-5xl mx-auto">
-              {/* Input Container Box with White Border */}
-              <div className="border-2 border-white dark:border-[#40414f] rounded-xl p-4 bg-white dark:bg-[#40414f] shadow-sm">
-                <div className="flex flex-col space-y-4">
-                  {/* Main Input Field */}
-                  <div className="relative rounded-xl bg-white dark:bg-[#40414f]">
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder="Start a conversation with MornGPT..."
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className="min-h-32 max-h-[28rem] resize-none pr-4 text-base py-3 px-3 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 outline-none rounded-xl"
-                    onKeyDown={(e) => {
-                      const currentHotkey = appUser?.settings?.sendHotkey || "enter"
-                      if (checkHotkeyMatch(e, currentHotkey)) {
-                        e.preventDefault()
-                        handleSubmit()
-                      }
-                    }}
-                  />
-                </div>
+            <div className="max-w-4xl mx-auto">
+                             {/* Input Container Box with Modern Styling */}
+               <div className="border border-gray-200 dark:border-[#565869] rounded-2xl p-4 bg-white dark:bg-[#40414f] shadow-lg">
+                  <div className="flex flex-col space-y-4">
+                    {/* Main Input Field */}
+                   <div className="relative">
+                    <Textarea
+                      ref={textareaRef}
+                      placeholder="Start a conversation with MornGPT..."
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      className="min-h-24 max-h-[24rem] resize-none pr-4 text-sm py-3 px-3 text-gray-900 dark:text-[#ececf1] bg-transparent border-0 focus:ring-0 focus:border-0 focus:outline-none outline-none rounded-xl selection:bg-white dark:selection:bg-[#40414f] selection:text-gray-900 dark:selection:text-[#ececf1] [&::selection]:bg-white dark:[&::selection]:bg-[#40414f]"
+                      onKeyDown={(e) => {
+                        const currentHotkey = appUser?.settings?.sendHotkey || "enter"
+                        if (checkHotkeyMatch(e, currentHotkey)) {
+                          e.preventDefault()
+                          handleSubmit()
+                        }
+                      }}
+                    />
+                  </div>
                 
-                {/* Action Buttons Row */}
-                <div className="flex flex-col space-y-3">
+                {/* Action Buttons Section */}
+                <div className="flex flex-col space-y-4">
                   {/* Input Controls Row */}
-                  <div className="flex items-center justify-between space-x-3">
-                    {/* Left Side - Model Selection and Pro Features */}
-                    <div className="flex items-center space-x-3">
-                      {/* Model Selector */}
-                      <Popover open={isModelSelectorOpen} onOpenChange={setIsModelSelectorOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-xs border-gray-300 dark:border-[#565869] hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1]"
-                            disabled={isModelLocked}
-                            title="Select Model"
-                          >
-                            <div className="flex items-center space-x-1">
-                              {getModelIcon()}
-                              <span className="max-w-20 truncate">{getSelectedModelDisplay()}</span>
-                              {!isModelLocked && <ChevronDown className="w-3 h-3" />}
-                            </div>
-                          </Button>
-                        </PopoverTrigger>
-                      </Popover>
+                   <div className="flex items-center justify-between">
+                     {/* Left Side - Quick Action Buttons */}
+                     <div className="flex items-center space-x-0.5 w-1/3">
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleQuickAction("deep-thinking")}
+                         className="h-7 flex items-center justify-center space-x-0.5 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded px-1 transition-all duration-200"
+                       >
+                         <Brain className="w-3 h-3" />
+                         <span className="text-xs font-medium">Deep Thinking</span>
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleQuickAction("creative")}
+                         className="h-7 flex items-center justify-center space-x-0.5 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded px-1 transition-all duration-200"
+                       >
+                         <Lightbulb className="w-3 h-3" />
+                         <span className="text-xs font-medium">Creative Ideas</span>
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleQuickAction("analyze")}
+                         className="h-7 flex items-center justify-center space-x-0.5 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded px-1 transition-all duration-200"
+                       >
+                         <Target className="w-3 h-3" />
+                         <span className="text-xs font-medium">Analyze</span>
+                       </Button>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleQuickAction("solve")}
+                         className="h-7 flex items-center justify-center space-x-0.5 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded px-1 transition-all duration-200"
+                       >
+                         <Zap className="w-3 h-3" />
+                         <span className="text-xs font-medium">Problem Solve</span>
+                       </Button>
+                     </div>
 
-                      {/* Pro Voice Chat Button */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                          isProVoiceChatActive 
-                            ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                        }`}
-                        title={isProVoiceChatActive ? "Stop Pro Voice Chat" : "Pro Voice Chat"}
-                        type="button"
-                        onClick={isProVoiceChatActive ? stopProVoiceChat : () => {
-                          startProVoiceChat()
-                          scrollToInputArea()
-                        }}
-                        disabled={!appUser}
-                      >
-                        {isProVoiceChatActive ? (
-                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
-                        ) : (
-                          <Mic className="w-2.5 h-2.5" />
-                        )}
-                      </Button>
-
-                      {/* Pro Video Chat Button */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                          isProVideoChatActive 
-                            ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                        }`}
-                        title={isProVideoChatActive ? "Stop Pro Video Chat" : "Pro Video Chat"}
-                        type="button"
-                        onClick={isProVideoChatActive ? stopProVideoChat : startProVideoChat}
-                        disabled={!appUser}
-                      >
-                        {isProVideoChatActive ? (
-                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
-                        ) : (
-                          <Video className="w-2.5 h-2.5" />
-                        )}
-                      </Button>
-                    </div>
-
-                    {/* Right Side - Input Controls */}
-                    <div className="flex items-center space-x-3">
-                      {/* File Upload */}
-                      <input 
-                        type="file" 
-                        multiple 
-                        onChange={handleFileUpload} 
-                        className="hidden" 
-                        id="file-upload"
-                        accept={ALLOWED_FILE_TYPES.join(',')}
-                        disabled={isUploading}
-                      />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className={`h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                          isUploading ? 'animate-pulse' : ''
-                        }`}
-                        title={
-                          uploadedFiles.length >= MAX_FILES 
-                            ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
-                            : isUploading 
-                              ? 'Uploading...' 
-                              : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
-                          }
-                        type="button"
+                                          {/* Right Side - Input Controls */}
+                                           <div className="flex items-center space-x-1 w-1/2 justify-end">
+                        {/* File Upload */}
+                        <input 
+                          type="file" 
+                          multiple 
+                          onChange={handleFileUpload} 
+                          className="hidden" 
+                          id="file-upload"
+                          accept={ALLOWED_FILE_TYPES.join(',')}
                           disabled={isUploading}
-                        onClick={() => {
-                          if (uploadedFiles.length >= MAX_FILES) {
-                            setUploadError(`Maximum ${MAX_FILES} files reached. Please remove some files first.`)
-                            setTimeout(() => setUploadError(""), 3000)
-                            return
-                          }
-                          document.getElementById('file-upload')?.click()
-                        }}
-                      >
-                        {isUploading ? (
-                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
-                        ) : (
-                          <Paperclip className="w-2.5 h-2.5" />
-                        )}
-                      </Button>
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={`h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                            isUploading ? 'animate-pulse' : ''
+                          }`}
+                          title={
+                            uploadedFiles.length >= MAX_FILES 
+                              ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
+                              : isUploading 
+                                ? 'Uploading...' 
+                                : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
+                            }
+                          type="button"
+                            disabled={isUploading}
+                          onClick={() => {
+                            if (uploadedFiles.length >= MAX_FILES) {
+                              setUploadError(`Maximum ${MAX_FILES} files reached. Please remove some files first.`)
+                              setTimeout(() => setUploadError(""), 3000)
+                              return
+                            }
+                            document.getElementById('file-upload')?.click()
+                          }}
+                        >
+                          {isUploading ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                          ) : (
+                            <Paperclip className="w-3 h-3" />
+                          )}
+                        </Button>
 
-                      {/* Voice Input Button */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                          isRecording 
-                            ? 'text-red-600 dark:text-red-400 animate-pulse' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                        }`}
-                        title={isRecording ? "Stop voice recording" : "Start voice recording"}
-                        type="button"
-                        onClick={toggleVoiceRecording}
-                      >
-                        {isRecording ? (
-                          <MicOff className="w-2.5 h-2.5" />
-                        ) : (
-                          <Volume2 className="w-2.5 h-2.5" />
-                        )}
-                      </Button>
+                                              {/* Voice Input Button */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                            isRecording 
+                              ? 'text-red-600 dark:text-red-400 animate-pulse' 
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                          }`}
+                          title={isRecording ? "Stop voice recording" : "Start voice recording"}
+                          type="button"
+                          onClick={toggleVoiceRecording}
+                        >
+                          {isRecording ? (
+                            <MicOff className="w-3 h-3" />
+                          ) : (
+                            <Volume2 className="w-3 h-3" />
+                          )}
+                        </Button>
 
-                      {/* Camera Button */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                          isCameraActive 
-                            ? 'text-blue-600 dark:text-blue-400' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                        }`}
-                        title={isCameraActive ? "Close camera" : "Open camera"}
-                        type="button"
-                        onClick={toggleCamera}
-                      >
-                        <Camera className="w-2.5 h-2.5" />
-                      </Button>
+                        {/* Camera Button */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                            isCameraActive 
+                              ? 'text-blue-600 dark:text-blue-400' 
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                          }`}
+                          title={isCameraActive ? "Close camera" : "Open camera"}
+                          type="button"
+                          onClick={toggleCamera}
+                        >
+                          <Camera className="w-3 h-3" />
+                        </Button>
 
-                      {/* Location Button */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={getCurrentLocation}
-                        disabled={isGettingLocation}
-                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                          currentLocation 
-                            ? 'text-green-600 dark:text-green-400' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                        }`}
-                        title={currentLocation ? "Location added - Click to get new location" : "Get current location"}
-                      >
-                        {isGettingLocation ? (
-                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
-                        ) : (
-                          <MapPin className="w-2.5 h-2.5" />
-                        )}
-                      </Button>
+                        {/* Location Button */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={getCurrentLocation}
+                          disabled={isGettingLocation}
+                          className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                            currentLocation 
+                              ? 'text-green-600 dark:text-green-400' 
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                          }`}
+                          title={currentLocation ? "Location added - Click to get new location" : "Get current location"}
+                        >
+                          {isGettingLocation ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                          ) : (
+                            <MapPin className="w-3 h-3" />
+                          )}
+                        </Button>
 
-                      {/* Ask GPT Button */}
-                      <Popover open={isAskGPTOpen} onOpenChange={setIsAskGPTOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] rounded-full border border-gray-300 dark:border-[#565869]"
-                              title="Navigate conversation"
-                              disabled={!appUser}
-                            >
-                              <Clock className="w-2.5 h-2.5" />
-                            </Button>
-                          </PopoverTrigger>
+                        {/* Ask GPT Button */}
+                        <Popover open={isAskGPTOpen} onOpenChange={setIsAskGPTOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] rounded-full border border-gray-300 dark:border-[#565869]"
+                                title="Navigate conversation"
+                                disabled={!appUser}
+                              >
+                                <Clock className="w-3 h-3" />
+                              </Button>
+                            </PopoverTrigger>
                         <PopoverContent
                           className="w-80 p-2 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]"
                           align="end"
@@ -4543,7 +4525,7 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                      className={`h-9 w-9 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         isProVoiceChatActive 
                           ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
@@ -4557,9 +4539,9 @@ export default function MornGPTHomepage() {
                       disabled={!appUser}
                     >
                       {isProVoiceChatActive ? (
-                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
                       ) : (
-                        <Mic className="w-2.5 h-2.5" />
+                        <Mic className="w-3 h-3" />
                       )}
                     </Button>
 
@@ -4567,7 +4549,7 @@ export default function MornGPTHomepage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                      className={`h-9 w-9 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
                         isProVideoChatActive 
                           ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
@@ -4578,225 +4560,161 @@ export default function MornGPTHomepage() {
                       disabled={!appUser}
                     >
                       {isProVideoChatActive ? (
-                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
                       ) : (
-                        <Video className="w-2.5 h-2.5" />
+                        <Video className="w-3 h-3" />
                       )}
                     </Button>
 
-                    {/* Model Selector */}
-                    <Popover open={isModelSelectorOpen} onOpenChange={setIsModelSelectorOpen}>
-                      <PopoverTrigger asChild>
+
+
+                        {/* Model Selector */}
+                        <Popover open={isModelSelectorOpen} onOpenChange={setIsModelSelectorOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs border-gray-300 dark:border-[#565869] hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1] rounded-md transition-all duration-200"
+                              disabled={isModelLocked}
+                              title="Select Model"
+                            >
+                              <div className="flex items-center space-x-1">
+                                {getModelIcon()}
+                                <span className="max-w-16 truncate">{getSelectedModelDisplay()}</span>
+                                {!isModelLocked && <ChevronDown className="w-2.5 h-2.5" />}
+                              </div>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-[1000px] p-0 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]"
+                            align="end"
+                          >
+                            <Tabs value={selectedModelType} onValueChange={setSelectedModelType} className="w-full">
+                              <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-[#565869]">
+                                <TabsTrigger value="general" className="text-xs text-gray-900 dark:text-[#ececf1]">
+                                  <MessageSquare className="w-3 h-3 mr-1" />
+                                  General
+                                </TabsTrigger>
+                                <TabsTrigger value="morngpt" className="text-xs text-gray-900 dark:text-[#ececf1]">
+                                  <Sparkles className="w-3 h-3 mr-1" />
+                                  MornGPT
+                                </TabsTrigger>
+                                <TabsTrigger value="external" className="text-xs text-gray-900 dark:text-[#ececf1]">
+                                  <Globe className="w-3 h-3 mr-1" />
+                                  External
+                                </TabsTrigger>
+                              </TabsList>
+
+                              <TabsContent value="general" className="p-4">
+                                <div
+                                  className="text-center cursor-pointer p-4 rounded-lg border border-gray-200 dark:border-[#565869] bg-gray-50 dark:bg-[#565869] hover:bg-gray-100 dark:hover:bg-[#444654]"
+                                  onClick={() => handleModelChange("general")}
+                                >
+                                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-500 dark:text-gray-400" />
+                                  <h3 className="font-medium text-gray-900 dark:text-[#ececf1] mb-1">General Model</h3>
+                                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    Auto select AI assistant for general conversations
+                                  </p>
+                                </div>
+                              </TabsContent>
+
+                              <TabsContent value="morngpt" className="p-2">
+                                <div className="grid grid-cols-3 gap-1">
+                                  {mornGPTCategories.map((category) => {
+                                    const IconComponent = category.icon
+                                    return (
+                                      <div
+                                        key={category.id}
+                                        className={`p-1.5 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-[#565869] border ${
+                                          selectedCategory === category.id
+                                            ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700"
+                                            : "border-gray-200 dark:border-[#565869]"
+                                        }`}
+                                        onClick={() => handleModelChange("morngpt", category.id)}
+                                      >
+                                        <div className="flex items-center space-x-1.5">
+                                          <div className={`p-0.5 rounded ${category.color} text-white`}>
+                                            <IconComponent className="w-2.5 h-2.5" />
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center space-x-1">
+                                              <p className="text-[10px] font-medium truncate text-gray-900 dark:text-[#ececf1]">
+                                                {category.name}
+                                              </p>
+                                              <Badge variant="secondary" className="text-[8px] px-0.5 py-0 h-3">
+                                                {category.id.toUpperCase()}1
+                                              </Badge>
+                                            </div>
+                                            <p className="text-[8px] text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-1">
+                                              {category.description}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </TabsContent>
+
+                              <TabsContent value="external" className="p-2">
+                                <div className="grid grid-cols-3 gap-1">
+                                  {externalModels.map((model, index) => (
+                                    <div
+                                      key={index}
+                                      className={`p-1.5 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-[#565869] ${
+                                        selectedModel === model.name
+                                          ? "bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700"
+                                          : "border-0"
+                                      }`}
+                                      onClick={() => {
+                                        if (model.type === 'premium' || model.type === 'popular') {
+                                          setShowUpgradeDialog(true);
+                                          setSelectedPaidModel(model);
+                                        } else {
+                                          handleModelChange("external", undefined, model.name);
+                                        }
+                                      }}
+                                    >
+                                      <div className="flex items-center space-x-1.5">
+                                        <div className="p-0.5 rounded bg-blue-500 text-white">
+                                          <MessageSquare className="w-2.5 h-2.5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center space-x-1">
+                                            <p className="text-[10px] font-medium truncate text-gray-900 dark:text-[#ececf1]">
+                                              {model.name}
+                                            </p>
+                                            <Badge 
+                                              variant={model.type === 'premium' || model.type === 'popular' ? 'destructive' : 'secondary'} 
+                                              className="text-[8px] px-0.5 py-0 h-3"
+                                            >
+                                              {model.type === 'premium' || model.type === 'popular' ? '$' : model.type}
+                                            </Badge>
+                                          </div>
+                                          <p className="text-[8px] text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-1">
+                                            {model.description}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </TabsContent>
+                            </Tabs>
+                          </PopoverContent>
+                        </Popover>
+
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-6 px-2 text-xs border-gray-300 dark:border-[#565869] hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1]"
-                          disabled={isModelLocked}
-                          title="Select Model"
+                          onClick={handleSubmit}
+                          disabled={!prompt.trim() || isLoading}
+                          className="h-7 w-7 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-sm transition-all duration-200"
                         >
-                          <div className="flex items-center space-x-1">
-                            {getModelIcon()}
-                            <span className="max-w-20 truncate">{getSelectedModelDisplay()}</span>
-                            {!isModelLocked && <ChevronDown className="w-3 h-3" />}
-                          </div>
+                          <Send className="w-3 h-3" />
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-[1000px] p-0 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]"
-                        align="end"
-                      >
-                        <Tabs value={selectedModelType} onValueChange={setSelectedModelType} className="w-full">
-                          <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-[#565869]">
-                            <TabsTrigger value="general" className="text-xs text-gray-900 dark:text-[#ececf1]">
-                              <MessageSquare className="w-3 h-3 mr-1" />
-                              General
-                            </TabsTrigger>
-                            <TabsTrigger value="morngpt" className="text-xs text-gray-900 dark:text-[#ececf1]">
-                              <Sparkles className="w-3 h-3 mr-1" />
-                              MornGPT
-                            </TabsTrigger>
-                            <TabsTrigger value="external" className="text-xs text-gray-900 dark:text-[#ececf1]">
-                              <Globe className="w-3 h-3 mr-1" />
-                              External
-                            </TabsTrigger>
-                          </TabsList>
-
-                          <TabsContent value="general" className="p-4">
-                            <div
-                              className="text-center cursor-pointer p-4 rounded-lg border border-gray-200 dark:border-[#565869] bg-gray-50 dark:bg-[#565869] hover:bg-gray-100 dark:hover:bg-[#444654]"
-                              onClick={() => handleModelChange("general")}
-                            >
-                              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-500 dark:text-gray-400" />
-                              <h3 className="font-medium text-gray-900 dark:text-[#ececf1] mb-1">General Model</h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Auto select AI assistant for general conversations
-                              </p>
-                            </div>
-                          </TabsContent>
-
-                          <TabsContent value="morngpt" className="p-2">
-                            <div className="grid grid-cols-3 gap-1">
-                              {mornGPTCategories.map((category) => {
-                                const IconComponent = category.icon
-                                return (
-                                  <div
-                                    key={category.id}
-                                    className={`p-1.5 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-[#565869] border ${
-                                      selectedCategory === category.id
-                                        ? "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700"
-                                        : "border-gray-200 dark:border-[#565869]"
-                                    }`}
-                                    onClick={() => handleModelChange("morngpt", category.id)}
-                                  >
-                                    <div className="flex items-center space-x-1.5">
-                                      <div className={`p-0.5 rounded ${category.color} text-white`}>
-                                        <IconComponent className="w-2.5 h-2.5" />
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center space-x-1">
-                                          <p className="text-[10px] font-medium truncate text-gray-900 dark:text-[#ececf1]">
-                                            {category.name}
-                                          </p>
-                                          <Badge variant="secondary" className="text-[8px] px-0.5 py-0 h-3">
-                                            {category.id.toUpperCase()}1
-                                          </Badge>
-                                        </div>
-                                        <p className="text-[8px] text-gray-600 dark:text-gray-400 mt-0.5 line-clamp-1">
-                                          {category.description}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </TabsContent>
-
-                          <TabsContent value="external" className="p-2">
-                            <div className="grid grid-cols-3 gap-1">
-                              {externalModels.map((model, index) => {
-                                                const isPaidModel = model.type === "popular" || model.type === "premium"
-                const canAccess = !isPaidModel || (appUser && appUser.isPaid) // Only paid users can access paid models
-                                
-                                return (
-                                  <div
-                                    key={index}
-                                    className={`p-1.5 rounded border ${
-                                      canAccess 
-                                        ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-[#565869]" 
-                                        : "cursor-not-allowed opacity-60"
-                                    } ${
-                                      selectedModel === model.name
-                                        ? model.type === "free"
-                                          ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
-                                          : "bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700"
-                                        : "border-gray-200 dark:border-[#565869]"
-                                    }`}
-                                    onClick={() => {
-                                      if (canAccess) {
-                                        handleModelChange("external", undefined, model.name)
-                                      } else {
-                                        // Show sign-up/sign-in prompt for guest users trying to access paid models
-                                        if (!appUser) {
-                                          setShowRegistrationPrompt(true)
-                                          setRegistrationPromptType("paid_model")
-                                        } else {
-                                          // Show upgrade prompt for logged-in users
-                                        handleUpgradeClick(pricingPlans[1]) // Pro plan
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    <div className="flex items-center justify-between mb-0.5">
-                                      <p className="text-[10px] font-medium truncate text-gray-900 dark:text-[#ececf1]">
-                                        {model.name}
-                                      </p>
-                                      <div className="flex items-center space-x-1">
-                                        {!canAccess && isPaidModel && (
-                                          <Lock className="w-2.5 h-2.5 text-gray-400" />
-                                        )}
-                                        <Badge className={`text-[8px] px-0.5 py-0 h-3 ${
-                                          model.type === "free"
-                                            ? "bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100"
-                                            : "bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100"
-                                        }`}>
-                                          {model.type === "free" ? "F" : "$"}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                    {model.type !== "free" && (
-                                      <p className="text-[8px] text-purple-600 dark:text-purple-400 mb-0.5 truncate">
-                                        {model.price}
-                                      </p>
-                                    )}
-                                    <p className="text-[8px] text-gray-600 dark:text-gray-300 line-clamp-1">
-                                      {model.description}
-                                    </p>
-                                    {!canAccess && isPaidModel && (
-                                      <p className="text-[8px] text-red-500 dark:text-red-400 mt-0.5">
-                                        Paid required
-                                      </p>
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </TabsContent>
-                        </Tabs>
-                      </PopoverContent>
-                    </Popover>
-
-
-
-                    <Button
-                      size="sm"
-                      onClick={handleSubmit}
-                      disabled={!prompt.trim() || isLoading}
-                      className="h-7 w-7 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-sm ml-2"
-                    >
-                      <Send className="w-2.5 h-2.5" />
-                    </Button>
                   </div>
                   
-                  {/* Left Side - Quick Action Buttons (second row) */}
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("deep-thinking")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Brain className="w-3 h-3" />
-                      <span className="text-xs font-medium">Deep Thinking</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("creative")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Lightbulb className="w-3 h-3" />
-                      <span className="text-xs font-medium">Creative Ideas</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("analyze")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Target className="w-3 h-3" />
-                      <span className="text-xs font-medium">Analyze</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("solve")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Zap className="w-3 h-3" />
-                      <span className="text-xs font-medium">Problem Solve</span>
-                    </Button>
-                  </div>
+
                 </div>
               </div>
 
@@ -5705,9 +5623,29 @@ export default function MornGPTHomepage() {
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
                 <Crown className="w-5 h-5 text-blue-500" />
-                <span>Choose Your MornGPT Plan</span>
+                <span>{selectedPaidModel ? `Upgrade to Access ${selectedPaidModel.name}` : 'Choose Your MornGPT Plan'}</span>
               </DialogTitle>
+              {selectedPaidModel && (
+                <DialogDescription className="text-gray-600 dark:text-gray-400">
+                  This premium model requires a paid subscription. Upgrade now to unlock access to {selectedPaidModel.name} and other advanced features.
+                </DialogDescription>
+              )}
             </DialogHeader>
+            
+            {/* Model Info Section */}
+            {selectedPaidModel && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-[#ececf1]">{selectedPaidModel.name}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedPaidModel.description}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Billing Period Toggle */}
             <div className="flex items-center justify-center mb-6">
@@ -5919,11 +5857,62 @@ export default function MornGPTHomepage() {
             <DialogHeader>
               <DialogTitle className="flex items-center space-x-2 text-gray-900 dark:text-[#ececf1]">
                 <CreditCard className="w-5 h-5" />
-                <span>Complete Your Purchase</span>
+                <span>{selectedPaidModel ? `Upgrade to Access ${selectedPaidModel.name}` : 'Complete Your Purchase'}</span>
               </DialogTitle>
+              {selectedPaidModel && (
+                <DialogDescription className="text-gray-600 dark:text-gray-400">
+                  This premium model requires a paid subscription. Upgrade now to unlock access to {selectedPaidModel.name} and other advanced features.
+                </DialogDescription>
+              )}
             </DialogHeader>
 
-            {selectedPlan && (
+            {selectedPaidModel ? (
+              <div className="space-y-4">
+                {/* Model Info */}
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">{selectedPaidModel.name}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{selectedPaidModel.description}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upgrade Plans */}
+                <div className="space-y-2">
+                  <Label className="text-gray-900 dark:text-[#ececf1] text-sm">Choose Your Plan</Label>
+                  {pricingPlans.map((plan) => (
+                    <div
+                      key={plan.name}
+                      onClick={() => setSelectedPlan(plan)}
+                      className={`p-3 rounded-lg cursor-pointer border-2 transition-all ${
+                        selectedPlan?.name === plan.name
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : 'border-gray-200 dark:border-[#565869] hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                                                 <div>
+                           <h4 className="font-medium text-gray-900 dark:text-[#ececf1]">{plan.name}</h4>
+                           <p className="text-sm text-gray-500 dark:text-gray-400">{plan.features[0]}</p>
+                         </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900 dark:text-[#ececf1]">
+                            {billingPeriod === "annual" ? plan.annualPrice : plan.price}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            per {billingPeriod === "annual" ? "month" : "month"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : selectedPlan && (
               <div className="space-y-2">
                 {/* Plan Summary */}
                 <div className="p-3 bg-gray-50 dark:bg-[#565869] rounded-lg">
