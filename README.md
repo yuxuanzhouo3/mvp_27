@@ -15,20 +15,27 @@ MornGPT Frontend Base Template is designed as a scalable foundation for 17 speci
 ### Product Architecture
 
 **17 Core Specialized Products:**
-- **Growth Advisory (A1)** - Business growth and strategy
+
+**Currently Active (4 Products):**
+- **Growth Advisory (A1)** - Business growth and strategy → [mornhub.net](https://mornhub.net)
+- **Housing (O1)** - Real estate and accommodation → [mornhub.homes](https://mornhub.homes)
+- **Person Matching (P1)** - Professional and personal matching → [mornhub.lat](https://mornhub.lat)
+- **Content Generation (W1)** - AI Generator → [mornhub.pics](https://mornhub.pics)
+
+**Planned Products (13 Products):**
 - **Interview/Job (B1)** - Career and employment assistance
 - **AI Coder (C1)** - Programming and development
 - **Content Detection (D1)** - Content analysis and verification
 - **Medical Advice (E1)** - Health and wellness guidance
 - **Multi-GPT (H1)** - Multi-model AI orchestration
-- **Housing (O1)** - Real estate and accommodation
-- **Person Matching (P1)** - Relationship and networking
+- **AI Lawyer (L1)** - Legal consultation and document review
+- **AI Entertainment Advisor (N1)** - Movie, music, and entertainment recommendations
 - **AI Teacher (Q1)** - Education and learning
 - **Travel Planning (R1)** - Travel and tourism
 - **Product Search (S1)** - E-commerce and shopping
 - **Fashion (T1)** - Style and fashion advice
 - **Food & Dining (U1)** - Culinary and dining
-- **Content Generation (W1)** - Creative content creation
+
 - **AI Protection (Z1)** - Security and privacy
 
 **Scalable Sub-Categories:**

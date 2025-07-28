@@ -3819,7 +3819,58 @@ export default function MornGPTHomepage() {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <h1 className="text-4xl font-bold text-gray-900 dark:text-[#ececf1] mb-4">MornGPT</h1>
-                  <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">Advanced AI models at your fingertips</p>
+                  <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">Frontend Base Template for 17 Specialized AI Products</p>
+                  
+                  {/* Active Products Section */}
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-6 max-w-4xl mx-auto mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-[#ececf1] mb-4">🚀 Currently Active Products</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <a href="https://mornhub.net" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-[#40414f] rounded-lg border border-gray-200 dark:border-[#565869] hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">Growth Advisory</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Business growth & strategy</p>
+                          </div>
+                        </div>
+                      </a>
+                      <a href="https://mornhub.homes" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-[#40414f] rounded-lg border border-gray-200 dark:border-[#565869] hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                            <Home className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">AI Homes</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Real estate & accommodation</p>
+                          </div>
+                        </div>
+                      </a>
+                      <a href="https://mornhub.lat" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-[#40414f] rounded-lg border border-gray-200 dark:border-[#565869] hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-pink-500 rounded-lg flex items-center justify-center">
+                            <Heart className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">AI Personal Match</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Professional & personal matching</p>
+                          </div>
+                        </div>
+                      </a>
+                      <a href="https://mornhub.pics" target="_blank" rel="noopener noreferrer" className="block p-4 bg-white dark:bg-[#40414f] rounded-lg border border-gray-200 dark:border-[#565869] hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-md">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <Palette className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="font-medium text-gray-900 dark:text-[#ececf1]">AI Generator</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Content generation & creation</p>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
 
                   {/* Compact Tips */}
                   <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 max-w-4xl mx-auto">
