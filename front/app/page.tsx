@@ -3949,9 +3949,11 @@ export default function MornGPTHomepage() {
           {/* Input Area - Fixed at bottom */}
           <div className="border-t border-gray-200 dark:border-[#565869] bg-white dark:bg-[#40414f] flex-shrink-0 p-6 sticky bottom-0">
             <div className="max-w-5xl mx-auto">
-              <div className="flex flex-col space-y-4">
-                {/* Main Input Field */}
-                                 <div className="relative rounded-xl bg-white dark:bg-[#40414f] border border-white dark:border-[#40414f]">
+              {/* Input Container Box with White Border */}
+              <div className="border-2 border-white dark:border-[#40414f] rounded-xl p-4 bg-white dark:bg-[#40414f] shadow-sm">
+                <div className="flex flex-col space-y-4">
+                  {/* Main Input Field */}
+                  <div className="relative rounded-xl bg-white dark:bg-[#40414f]">
                   <Textarea
                     ref={textareaRef}
                     placeholder="Start a conversation with MornGPT..."
@@ -3969,159 +3971,188 @@ export default function MornGPTHomepage() {
                 </div>
                 
                 {/* Action Buttons Row */}
-                <div className="flex items-center justify-between">
-                  {/* Left Side - Quick Action Buttons */}
-                  <div className="flex items-center space-x-1 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("deep-thinking")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Brain className="w-3 h-3" />
-                      <span className="text-xs font-medium">Deep Thinking</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("creative")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Lightbulb className="w-3 h-3" />
-                      <span className="text-xs font-medium">Creative Ideas</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("analyze")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Target className="w-3 h-3" />
-                      <span className="text-xs font-medium">Analyze</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleQuickAction("solve")}
-                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
-                    >
-                      <Zap className="w-3 h-3" />
-                      <span className="text-xs font-medium">Problem Solve</span>
-                    </Button>
-                  </div>
-                  
-                                    {/* Right Side - Input Controls */}
-                  <div className="flex items-center space-x-3">
-                    {/* File Upload */}
-                    <input 
-                      type="file" 
-                      multiple 
-                      onChange={handleFileUpload} 
-                      className="hidden" 
-                      id="file-upload"
-                      accept={ALLOWED_FILE_TYPES.join(',')}
-                      disabled={isUploading}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={`h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                        isUploading ? 'animate-pulse' : ''
-                      }`}
-                      title={
-                        uploadedFiles.length >= MAX_FILES 
-                          ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
-                          : isUploading 
-                            ? 'Uploading...' 
-                            : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
-                        }
-                      type="button"
-                        disabled={isUploading}
-                      onClick={() => {
-                        if (uploadedFiles.length >= MAX_FILES) {
-                          setUploadError(`Maximum ${MAX_FILES} files reached. Please remove some files first.`)
-                          setTimeout(() => setUploadError(""), 3000)
-                          return
-                        }
-                        document.getElementById('file-upload')?.click()
-                      }}
-                    >
-                      {isUploading ? (
-                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
-                      ) : (
-                        <Paperclip className="w-2.5 h-2.5" />
-                      )}
-                    </Button>
-
-                    {/* Voice Input Button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                        isRecording 
-                          ? 'text-red-600 dark:text-red-400 animate-pulse' 
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                      }`}
-                      title={isRecording ? "Stop voice recording" : "Start voice recording"}
-                      type="button"
-                      onClick={toggleVoiceRecording}
-                    >
-                      {isRecording ? (
-                        <MicOff className="w-2.5 h-2.5" />
-                      ) : (
-                        <Volume2 className="w-2.5 h-2.5" />
-                      )}
-                    </Button>
-
-                    {/* Camera Button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                        isCameraActive 
-                          ? 'text-blue-600 dark:text-blue-400' 
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                      }`}
-                      title={isCameraActive ? "Close camera" : "Open camera"}
-                      type="button"
-                      onClick={toggleCamera}
-                    >
-                      <Camera className="w-2.5 h-2.5" />
-                    </Button>
-
-                    {/* Location Button */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={getCurrentLocation}
-                      disabled={isGettingLocation}
-                      className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
-                        currentLocation 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
-                      }`}
-                      title={currentLocation ? "Location added - Click to get new location" : "Get current location"}
-                    >
-                      {isGettingLocation ? (
-                        <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
-                      ) : (
-                        <MapPin className="w-2.5 h-2.5" />
-                      )}
-                    </Button>
-
-                    {/* Ask GPT Button */}
-                    <Popover open={isAskGPTOpen} onOpenChange={setIsAskGPTOpen}>
+                <div className="flex flex-col space-y-3">
+                  {/* Input Controls Row */}
+                  <div className="flex items-center justify-between space-x-3">
+                    {/* Left Side - Model Selection and Pro Features */}
+                    <div className="flex items-center space-x-3">
+                      {/* Model Selector */}
+                      <Popover open={isModelSelectorOpen} onOpenChange={setIsModelSelectorOpen}>
                         <PopoverTrigger asChild>
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] rounded-full border border-gray-300 dark:border-[#565869]"
-                            title="Navigate conversation"
-                            disabled={!appUser}
+                            variant="outline"
+                            className="h-6 px-2 text-xs border-gray-300 dark:border-[#565869] hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-[#40414f] text-gray-900 dark:text-[#ececf1]"
+                            disabled={isModelLocked}
+                            title="Select Model"
                           >
-                            <Clock className="w-2.5 h-2.5" />
+                            <div className="flex items-center space-x-1">
+                              {getModelIcon()}
+                              <span className="max-w-20 truncate">{getSelectedModelDisplay()}</span>
+                              {!isModelLocked && <ChevronDown className="w-3 h-3" />}
+                            </div>
                           </Button>
                         </PopoverTrigger>
+                      </Popover>
+
+                      {/* Pro Voice Chat Button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                          isProVoiceChatActive 
+                            ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                        }`}
+                        title={isProVoiceChatActive ? "Stop Pro Voice Chat" : "Pro Voice Chat"}
+                        type="button"
+                        onClick={isProVoiceChatActive ? stopProVoiceChat : () => {
+                          startProVoiceChat()
+                          scrollToInputArea()
+                        }}
+                        disabled={!appUser}
+                      >
+                        {isProVoiceChatActive ? (
+                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
+                        ) : (
+                          <Mic className="w-2.5 h-2.5" />
+                        )}
+                      </Button>
+
+                      {/* Pro Video Chat Button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                          isProVideoChatActive 
+                            ? 'text-purple-600 dark:text-purple-400 animate-pulse' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                        }`}
+                        title={isProVideoChatActive ? "Stop Pro Video Chat" : "Pro Video Chat"}
+                        type="button"
+                        onClick={isProVideoChatActive ? stopProVideoChat : startProVideoChat}
+                        disabled={!appUser}
+                      >
+                        {isProVideoChatActive ? (
+                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
+                        ) : (
+                          <Video className="w-2.5 h-2.5" />
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Right Side - Input Controls */}
+                    <div className="flex items-center space-x-3">
+                      {/* File Upload */}
+                      <input 
+                        type="file" 
+                        multiple 
+                        onChange={handleFileUpload} 
+                        className="hidden" 
+                        id="file-upload"
+                        accept={ALLOWED_FILE_TYPES.join(',')}
+                        disabled={isUploading}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                          isUploading ? 'animate-pulse' : ''
+                        }`}
+                        title={
+                          uploadedFiles.length >= MAX_FILES 
+                            ? `Maximum ${MAX_FILES} files reached. Remove some files first.` 
+                            : isUploading 
+                              ? 'Uploading...' 
+                              : `Upload files (max ${MAX_FILES}, ${MAX_TOTAL_SIZE / (1024 * 1024)}MB total)`
+                          }
+                        type="button"
+                          disabled={isUploading}
+                        onClick={() => {
+                          if (uploadedFiles.length >= MAX_FILES) {
+                            setUploadError(`Maximum ${MAX_FILES} files reached. Please remove some files first.`)
+                            setTimeout(() => setUploadError(""), 3000)
+                            return
+                          }
+                          document.getElementById('file-upload')?.click()
+                        }}
+                      >
+                        {isUploading ? (
+                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
+                        ) : (
+                          <Paperclip className="w-2.5 h-2.5" />
+                        )}
+                      </Button>
+
+                      {/* Voice Input Button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                          isRecording 
+                            ? 'text-red-600 dark:text-red-400 animate-pulse' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                        }`}
+                        title={isRecording ? "Stop voice recording" : "Start voice recording"}
+                        type="button"
+                        onClick={toggleVoiceRecording}
+                      >
+                        {isRecording ? (
+                          <MicOff className="w-2.5 h-2.5" />
+                        ) : (
+                          <Volume2 className="w-2.5 h-2.5" />
+                        )}
+                      </Button>
+
+                      {/* Camera Button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                          isCameraActive 
+                            ? 'text-blue-600 dark:text-blue-400' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                        }`}
+                        title={isCameraActive ? "Close camera" : "Open camera"}
+                        type="button"
+                        onClick={toggleCamera}
+                      >
+                        <Camera className="w-2.5 h-2.5" />
+                      </Button>
+
+                      {/* Location Button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={getCurrentLocation}
+                        disabled={isGettingLocation}
+                        className={`h-7 w-7 p-0 transition-all duration-200 rounded-full border border-gray-300 dark:border-[#565869] ${
+                          currentLocation 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869]'
+                        }`}
+                        title={currentLocation ? "Location added - Click to get new location" : "Get current location"}
+                      >
+                        {isGettingLocation ? (
+                          <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current"></div>
+                        ) : (
+                          <MapPin className="w-2.5 h-2.5" />
+                        )}
+                      </Button>
+
+                      {/* Ask GPT Button */}
+                      <Popover open={isAskGPTOpen} onOpenChange={setIsAskGPTOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#565869] rounded-full border border-gray-300 dark:border-[#565869]"
+                              title="Navigate conversation"
+                              disabled={!appUser}
+                            >
+                              <Clock className="w-2.5 h-2.5" />
+                            </Button>
+                          </PopoverTrigger>
                         <PopoverContent
                           className="w-80 p-2 bg-white dark:bg-[#40414f] border-gray-200 dark:border-[#565869]"
                           align="end"
@@ -4726,6 +4757,46 @@ export default function MornGPTHomepage() {
                       <Send className="w-2.5 h-2.5" />
                     </Button>
                   </div>
+                  
+                  {/* Left Side - Quick Action Buttons (second row) */}
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("deep-thinking")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Brain className="w-3 h-3" />
+                      <span className="text-xs font-medium">Deep Thinking</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("creative")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Lightbulb className="w-3 h-3" />
+                      <span className="text-xs font-medium">Creative Ideas</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("analyze")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Target className="w-3 h-3" />
+                      <span className="text-xs font-medium">Analyze</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction("solve")}
+                      className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-[#565869] hover:text-gray-900 dark:hover:text-[#ececf1] bg-white dark:bg-[#40414f] hover:bg-gray-50 dark:hover:bg-[#565869] rounded-md px-2 py-1"
+                    >
+                      <Zap className="w-3 h-3" />
+                      <span className="text-xs font-medium">Problem Solve</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -4995,6 +5066,8 @@ export default function MornGPTHomepage() {
                 )}
 
 
+                </div>
+              </div>
             </div>
           </div>
         </div>
