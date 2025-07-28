@@ -42,6 +42,13 @@ Each of the 17 core products can expand into multiple sub-categories:
 - **17 Core Products** → **100+ Sub-Categories** → **1000+ Specialized Models**
 - **Factors**: Country/region, user demographics, industry verticals, use cases
 
+**Business Model & Capacity Planning:**
+- **Target User Base**: Up to 10,000 users (maximum capacity for current team)
+- **Conversion Rate**: 10% to paid subscriptions (1,000 paid users)
+- **Revenue per User**: $100 annually average
+- **Revenue Potential**: $100,000 - $1.7M annually
+- **Team Capacity**: Optimized for 10,000 users maximum (requires additional team members beyond this scale)
+
 ## Features
 
 - 🤖 **Multi-Model AI Support**: Access to various AI models including MornGPT specialized models and external providers
@@ -58,6 +65,7 @@ Each of the 17 core products can expand into multiple sub-categories:
 - 🔐 **User Authentication**: Secure login and user management
 - 💳 **Subscription Plans**: Pro features with upgrade options
 - 🏗️ **Modular Architecture**: Designed for easy customization and scaling
+- 📊 **Business-Ready**: Optimized for up to 10,000 users with scalable revenue model
 
 ## Tech Stack
 
@@ -204,4 +212,6 @@ For questions or support regarding this project, please contact:
 
 *Built with ❤️ using Next.js, TypeScript, and Tailwind CSS*
 
-*MornGPT Frontend Base Template - Foundation for 17 specialized AI products with scalable architecture for 1000+ use cases* 
+*MornGPT Frontend Base Template - Foundation for 17 specialized AI products with scalable architecture for 1000+ use cases*
+
+*Business Model: Optimized for 10,000 users with $100K-$1.7M annual revenue potential* 
